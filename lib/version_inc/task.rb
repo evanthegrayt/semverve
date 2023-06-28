@@ -1,0 +1,65 @@
+# frozen_string_literal: true
+
+require "rake"
+
+module VersionInc
+  class Task
+    include Rake::DSL
+
+    attr_accessor :bundle_lock
+
+    def initialize
+      @bundle_lock = false
+      @file_path = File.join("lib", "version_inc", "version.rb")
+      yield self if block_given?
+      define
+    end
+
+    def define
+      namespace :version do
+        desc "Print the current version from the version.rb file"
+        task :current do
+          puts VersionInc::VERSION
+        end
+
+        namespace :increment do
+          desc "Increment the version's PATCH level"
+          task :patch do
+            @file_path.then do |version_file|
+              File.write(
+                version_file,
+                File.read(version_file).sub(/(PATCH\s=\s)(\d+)/) { "#{$1}#{$2.next}" }
+              )
+            end
+            system("bundle lock")
+          end
+          desc "Increment the version's MINOR level"
+          task :minor do
+            @file_path.then do |version_file|
+              File.write(
+                version_file,
+                File.read(version_file)
+                .sub(/(PATCH\s=\s)(\d+)/) { "#{$1}0" }
+                .sub(/(MINOR\s=\s)(\d+)/) { "#{$1}#{$2.next}" }
+              )
+            end
+            system("bundle lock")
+          end
+          desc "Increment the version's MAJOR level"
+          task :major do
+            @file_path.then do |version_file|
+              File.write(
+                version_file,
+                File.read(version_file)
+                .sub(/(PATCH\s=\s)(\d+)/) { "#{$1}0" }
+                .sub(/(MINOR\s=\s)(\d+)/) { "#{$1}0" }
+                .sub(/(MAJOR\s=\s)(\d+)/) { "#{$1}#{$2.next}" }
+              )
+            end
+            system("bundle lock")
+          end
+        end
+      end
+    end
+  end
+end

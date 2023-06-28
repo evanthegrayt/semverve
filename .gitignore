@@ -1,0 +1,3 @@
+version_inc-*.gem
+coverage/*
+docs/*
