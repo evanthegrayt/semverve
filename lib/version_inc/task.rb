@@ -2,64 +2,86 @@
 
 require "rake"
 
+require_relative "../version_inc"
+require_relative "generator"
+require_relative "version_file"
+
 module VersionInc
   class Task
     include Rake::DSL
 
-    attr_accessor :bundle_lock
+    class << self
+      def install
+        return if installed_for_current_application?
+
+        new
+      end
+
+      private
+
+      def installed_for_current_application?
+        installed_applications.include?(Rake.application.object_id)
+      end
+
+      def installed_applications
+        @installed_applications ||= []
+      end
+
+      def mark_current_application_installed
+        installed_applications << Rake.application.object_id
+      end
+    end
 
     def initialize
-      @bundle_lock = false
-      @file_path = File.join("lib", "version_inc", "version.rb")
-      yield self if block_given?
-      define
+      yield VersionInc.configuration if block_given?
+
+      unless self.class.send(:installed_for_current_application?)
+        define
+        self.class.send(:mark_current_application_installed)
+      end
     end
 
     def define
-      namespace :version do
+      namespace :version_inc do
         desc "Print the current version from the version.rb file"
         task :current do
-          puts VersionInc::VERSION
+          puts VersionFile.new(VersionInc.configuration.resolved).current
         end
 
         namespace :increment do
           desc "Increment the version's PATCH level"
           task :patch do
-            @file_path.then do |version_file|
-              File.write(
-                version_file,
-                File.read(version_file).sub(/(PATCH\s=\s)(\d+)/) { "#{$1}#{$2.next}" }
-              )
-            end
-            system("bundle lock")
+            increment(:patch)
           end
+
           desc "Increment the version's MINOR level"
           task :minor do
-            @file_path.then do |version_file|
-              File.write(
-                version_file,
-                File.read(version_file)
-                .sub(/(PATCH\s=\s)(\d+)/) { "#{$1}0" }
-                .sub(/(MINOR\s=\s)(\d+)/) { "#{$1}#{$2.next}" }
-              )
-            end
-            system("bundle lock")
+            increment(:minor)
           end
+
           desc "Increment the version's MAJOR level"
           task :major do
-            @file_path.then do |version_file|
-              File.write(
-                version_file,
-                File.read(version_file)
-                .sub(/(PATCH\s=\s)(\d+)/) { "#{$1}0" }
-                .sub(/(MINOR\s=\s)(\d+)/) { "#{$1}0" }
-                .sub(/(MAJOR\s=\s)(\d+)/) { "#{$1}#{$2.next}" }
-              )
-            end
-            system("bundle lock")
+            increment(:major)
           end
+        end
+
+        desc "Generate a version.rb file"
+        task :generate do
+          puts "Generated #{Generator.new(VersionInc.configuration.resolved).generate}"
         end
       end
     end
+
+    private
+
+    def increment(level)
+      configuration = VersionInc.configuration.resolved
+      next_version = VersionFile.new(configuration).increment(level)
+      configuration.command_runner.call("bundle lock") if configuration.bundle_lock
+
+      puts next_version
+    end
   end
 end
+
+VersionInc::Task.install

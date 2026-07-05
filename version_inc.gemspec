@@ -7,8 +7,8 @@ Gem::Specification.new do |spec|
   spec.email = "evanthegrayt@vivaldi.net"
   spec.license = "MIT"
 
-  spec.summary = %(Macros for creating boolean attribute methods)
-  spec.description = %(Macros for creating boolean attribute methods)
+  spec.summary = %(Rake tasks for managing Ruby gem version files)
+  spec.description = %(VersionInc adds Rake tasks that read, generate, and increment Ruby gem version files.)
   spec.homepage = "https://github.com/evanthegrayt/version_inc"
 
   unless spec.respond_to?(:metadata)
