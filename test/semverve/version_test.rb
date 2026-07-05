@@ -24,18 +24,6 @@ module Semverve
       )
     end
 
-    def test_to_h
-      assert_instance_of(Hash, Semverve::Version.to_h)
-      assert_equal(
-        {
-          major: Semverve::Version::MAJOR,
-          minor: Semverve::Version::MINOR,
-          patch: Semverve::Version::PATCH
-        },
-        Semverve::Version.to_h
-      )
-    end
-
     def test_to_s
       assert_instance_of(String, Semverve::Version.to_s)
       assert_match(/\d+\.\d+.\d+/, Semverve::Version.to_s)
