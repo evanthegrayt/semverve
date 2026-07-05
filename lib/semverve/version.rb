@@ -40,14 +40,6 @@ module Semverve
     def to_s
       to_a.join(".")
     end
-
-    ##
-    # Version as +{major: MAJOR, minor: MINOR, patch: PATCH}+
-    #
-    # @return [Hash]
-    def to_h
-      %i[major minor patch].zip(to_a).to_h
-    end
   end
 
   ##
