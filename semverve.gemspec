@@ -1,15 +1,15 @@
-require_relative "lib/version_inc/version"
+require_relative "lib/semverve/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "version_inc"
-  spec.version = VersionInc::VERSION
+  spec.name = "semverve"
+  spec.version = Semverve::VERSION
   spec.authors = ["Evan Gray"]
   spec.email = "evanthegrayt@vivaldi.net"
   spec.license = "MIT"
 
   spec.summary = %(Rake tasks for managing Ruby gem version files)
-  spec.description = %(VersionInc adds Rake tasks that read, generate, and increment Ruby gem version files.)
-  spec.homepage = "https://github.com/evanthegrayt/version_inc"
+  spec.description = %(Semverve adds Rake tasks that read, generate, and increment Ruby gem version files.)
+  spec.homepage = "https://github.com/evanthegrayt/semverve"
 
   unless spec.respond_to?(:metadata)
     raise "RubyGems 2.0 or newer is required to protect against " \
@@ -18,8 +18,8 @@ Gem::Specification.new do |spec|
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/evanthegrayt/version_inc"
-  spec.metadata["documentation_uri"] = "https://evanthegrayt.github.io/version_inc/"
+  spec.metadata["source_code_uri"] = "https://github.com/evanthegrayt/semverve"
+  spec.metadata["documentation_uri"] = "https://evanthegrayt.github.io/semverve/"
 
   spec.files = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{^(test|spec|features)/})

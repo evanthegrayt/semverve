@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require_relative "version_inc/configuration"
-require_relative "version_inc/version"
+require_relative "semverve/configuration"
+require_relative "semverve/version"
 
-module VersionInc
+module Semverve
   class << self
     def configure
       yield configuration

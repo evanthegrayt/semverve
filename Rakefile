@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "lib/version_inc/task"
+require_relative "lib/semverve/task"
 require "bundler/gem_tasks"
 require "rdoc/task"
 require "rake/testtask"
@@ -19,7 +19,7 @@ RDoc::Task.new do |rdoc|
   rdoc.rdoc_files.include("README.md", "lib/**/*.rb")
 end
 
-VersionInc::Task.new do |t|
+Semverve::Task.new do |t|
   t.bundle_lock = true
 end
 

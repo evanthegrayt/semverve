@@ -3,7 +3,7 @@
 require_relative "../error"
 require_relative "../semantic_version"
 
-module VersionInc
+module Semverve
   module Formats
     class SimpleString
       PATTERN = /^(\s*VERSION\s*=\s*)(["'])(\d+\.\d+\.\d+)(\2)/

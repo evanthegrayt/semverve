@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module VersionInc
+module Semverve
   class Error < StandardError
   end
 end

@@ -2,7 +2,7 @@
 
 require_relative "project_metadata"
 
-module VersionInc
+module Semverve
   class Configuration
     attr_accessor :bundle_lock,
       :command_runner,

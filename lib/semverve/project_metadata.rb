@@ -2,7 +2,7 @@
 
 require_relative "error"
 
-module VersionInc
+module Semverve
   class ProjectMetadata
     def initialize(configuration)
       @configuration = configuration

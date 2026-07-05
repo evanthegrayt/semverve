@@ -5,7 +5,7 @@ require "simplecov"
 SimpleCov.start { add_filter %r{^/test/} }
 
 require "test/unit"
-require_relative "../lib/version_inc"
+require_relative "../lib/semverve"
 
 module TestHelper
 end
