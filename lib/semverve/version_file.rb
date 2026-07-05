@@ -3,7 +3,7 @@
 require_relative "error"
 require_relative "formats"
 
-module VersionInc
+module Semverve
   class VersionFile
     def initialize(configuration)
       @configuration = configuration
@@ -31,7 +31,7 @@ module VersionInc
 
     def read
       unless File.file?(path)
-        raise Error, "Could not find version file #{path}. Run rake version_inc:generate or set config.version_file."
+        raise Error, "Could not find version file #{path}. Run rake semverve:generate or set config.version_file."
       end
 
       File.read(path)

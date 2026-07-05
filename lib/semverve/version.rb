@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module VersionInc
+module Semverve
   ##
   # Module that contains all gem version information. Follows semantic
   # versioning. Read: https://semver.org/

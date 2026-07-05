@@ -3,7 +3,7 @@
 require_relative "formats/module_constants"
 require_relative "formats/simple_string"
 
-module VersionInc
+module Semverve
   module Formats
     def self.fetch(name)
       case name.to_sym

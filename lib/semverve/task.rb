@@ -2,11 +2,11 @@
 
 require "rake"
 
-require_relative "../version_inc"
+require_relative "../semverve"
 require_relative "generator"
 require_relative "version_file"
 
-module VersionInc
+module Semverve
   class Task
     include Rake::DSL
 
@@ -33,7 +33,7 @@ module VersionInc
     end
 
     def initialize
-      yield VersionInc.configuration if block_given?
+      yield Semverve.configuration if block_given?
 
       unless self.class.send(:installed_for_current_application?)
         define
@@ -42,10 +42,10 @@ module VersionInc
     end
 
     def define
-      namespace :version_inc do
+      namespace :semverve do
         desc "Print the current version from the version.rb file"
         task :current do
-          puts VersionFile.new(VersionInc.configuration.resolved).current
+          puts VersionFile.new(Semverve.configuration.resolved).current
         end
 
         namespace :increment do
@@ -67,7 +67,7 @@ module VersionInc
 
         desc "Generate a version.rb file"
         task :generate do
-          puts "Generated #{Generator.new(VersionInc.configuration.resolved).generate}"
+          puts "Generated #{Generator.new(Semverve.configuration.resolved).generate}"
         end
       end
     end
@@ -75,7 +75,7 @@ module VersionInc
     private
 
     def increment(level)
-      configuration = VersionInc.configuration.resolved
+      configuration = Semverve.configuration.resolved
       next_version = VersionFile.new(configuration).increment(level)
       configuration.command_runner.call("bundle lock") if configuration.bundle_lock
 
@@ -84,4 +84,4 @@ module VersionInc
   end
 end
 
-VersionInc::Task.install
+Semverve::Task.install

@@ -5,9 +5,9 @@ require "stringio"
 require "tmpdir"
 
 require_relative "../test_helper"
-require_relative "../../lib/version_inc/task"
+require_relative "../../lib/semverve/task"
 
-module VersionInc
+module Semverve
   class TaskTest < Test::Unit::TestCase
     def setup
       @original_application = Rake.application
@@ -24,18 +24,18 @@ module VersionInc
       reset_configuration
     end
 
-    def test_defines_version_inc_tasks
+    def test_defines_semverve_tasks
       in_project do
         write_gemspec("standup_md")
         write_module_version("StandupMD", "2.0.1")
 
         Task.new
 
-        assert_not_nil Rake::Task["version_inc:current"]
-        assert_not_nil Rake::Task["version_inc:increment:patch"]
-        assert_not_nil Rake::Task["version_inc:increment:minor"]
-        assert_not_nil Rake::Task["version_inc:increment:major"]
-        assert_not_nil Rake::Task["version_inc:generate"]
+        assert_not_nil Rake::Task["semverve:current"]
+        assert_not_nil Rake::Task["semverve:increment:patch"]
+        assert_not_nil Rake::Task["semverve:increment:minor"]
+        assert_not_nil Rake::Task["semverve:increment:major"]
+        assert_not_nil Rake::Task["semverve:generate"]
         assert_raise(RuntimeError) { Rake::Task["version:current"] }
       end
     end
@@ -47,7 +47,7 @@ module VersionInc
 
         Task.new
 
-        assert_equal "2.0.1\n", capture_stdout { Rake::Task["version_inc:current"].invoke }
+        assert_equal "2.0.1\n", capture_stdout { Rake::Task["semverve:current"].invoke }
       end
     end
 
@@ -58,7 +58,7 @@ module VersionInc
 
         Task.new { |config| config.format = :simple }
 
-        assert_equal "2.0.1\n", capture_stdout { Rake::Task["version_inc:current"].invoke }
+        assert_equal "2.0.1\n", capture_stdout { Rake::Task["semverve:current"].invoke }
       end
     end
 
@@ -69,7 +69,7 @@ module VersionInc
 
         Task.new
 
-        assert_equal "2.0.2\n", capture_stdout { Rake::Task["version_inc:increment:patch"].invoke }
+        assert_equal "2.0.2\n", capture_stdout { Rake::Task["semverve:increment:patch"].invoke }
         assert_match(/PATCH = 2/, File.read(path))
       end
     end
@@ -81,7 +81,7 @@ module VersionInc
 
         Task.new
 
-        assert_equal "2.1.0\n", capture_stdout { Rake::Task["version_inc:increment:minor"].invoke }
+        assert_equal "2.1.0\n", capture_stdout { Rake::Task["semverve:increment:minor"].invoke }
         assert_match(/MINOR = 1/, File.read(path))
         assert_match(/PATCH = 0/, File.read(path))
       end
@@ -94,7 +94,7 @@ module VersionInc
 
         Task.new
 
-        assert_equal "3.0.0\n", capture_stdout { Rake::Task["version_inc:increment:major"].invoke }
+        assert_equal "3.0.0\n", capture_stdout { Rake::Task["semverve:increment:major"].invoke }
         assert_match(/MAJOR = 3/, File.read(path))
         assert_match(/MINOR = 0/, File.read(path))
         assert_match(/PATCH = 0/, File.read(path))
@@ -108,7 +108,7 @@ module VersionInc
 
         Task.new { |config| config.format = :simple }
 
-        assert_equal "2.0.2\n", capture_stdout { Rake::Task["version_inc:increment:patch"].invoke }
+        assert_equal "2.0.2\n", capture_stdout { Rake::Task["semverve:increment:patch"].invoke }
         assert_match(/VERSION = "2.0.2"/, File.read(path))
       end
     end
@@ -124,7 +124,7 @@ module VersionInc
           config.command_runner = ->(command) { commands << command }
         end
 
-        capture_stdout { Rake::Task["version_inc:increment:patch"].invoke }
+        capture_stdout { Rake::Task["semverve:increment:patch"].invoke }
 
         assert_empty commands
       end
@@ -142,7 +142,7 @@ module VersionInc
           config.command_runner = ->(command) { commands << command }
         end
 
-        capture_stdout { Rake::Task["version_inc:increment:patch"].invoke }
+        capture_stdout { Rake::Task["semverve:increment:patch"].invoke }
 
         assert_equal ["bundle lock"], commands
       end
@@ -161,7 +161,7 @@ module VersionInc
           config.format = :simple
         end
 
-        assert_equal "1.2.3\n", capture_stdout { Rake::Task["version_inc:current"].invoke }
+        assert_equal "1.2.3\n", capture_stdout { Rake::Task["semverve:current"].invoke }
       end
     end
 
@@ -176,7 +176,7 @@ module VersionInc
           config.format = :simple
         end
 
-        assert_equal "1.2.3\n", capture_stdout { Rake::Task["version_inc:current"].invoke }
+        assert_equal "1.2.3\n", capture_stdout { Rake::Task["semverve:current"].invoke }
       end
     end
 
@@ -186,7 +186,7 @@ module VersionInc
 
         Task.new
 
-        output = capture_stdout { Rake::Task["version_inc:generate"].invoke }
+        output = capture_stdout { Rake::Task["semverve:generate"].invoke }
         path = File.realpath(File.join(@tmpdir, "lib", "standup_md", "version.rb"))
 
         assert_match(/Generated #{Regexp.escape(path)}/, output)
@@ -204,7 +204,7 @@ module VersionInc
         Task.new
 
         with_env("VERSION" => "1.2.3", "FORMAT" => "simple") do
-          capture_stdout { Rake::Task["version_inc:generate"].invoke }
+          capture_stdout { Rake::Task["semverve:generate"].invoke }
         end
 
         assert_match(/VERSION = "1.2.3"/, File.read(File.join(@tmpdir, "lib", "standup_md", "version.rb")))
@@ -218,7 +218,7 @@ module VersionInc
 
         Task.new
 
-        error = assert_raise(Error) { Rake::Task["version_inc:generate"].invoke }
+        error = assert_raise(Error) { Rake::Task["semverve:generate"].invoke }
         assert_match(/already exists/, error.message)
       end
     end
@@ -231,7 +231,7 @@ module VersionInc
         Task.new
 
         with_env("VERSION" => "1.2.3", "FORCE" => "true") do
-          capture_stdout { Rake::Task["version_inc:generate"].invoke }
+          capture_stdout { Rake::Task["semverve:generate"].invoke }
         end
 
         assert_match(/MAJOR = 1/, File.read(path))
@@ -244,7 +244,7 @@ module VersionInc
       in_project do
         Task.new
 
-        error = assert_raise(Error) { Rake::Task["version_inc:current"].invoke }
+        error = assert_raise(Error) { Rake::Task["semverve:current"].invoke }
         assert_match(/no .gemspec/, error.message)
       end
     end
@@ -256,7 +256,7 @@ module VersionInc
 
         Task.new
 
-        error = assert_raise(Error) { Rake::Task["version_inc:current"].invoke }
+        error = assert_raise(Error) { Rake::Task["semverve:current"].invoke }
         assert_match(/multiple .gemspec/, error.message)
       end
     end
@@ -267,7 +267,7 @@ module VersionInc
 
         Task.new
 
-        error = assert_raise(Error) { Rake::Task["version_inc:current"].invoke }
+        error = assert_raise(Error) { Rake::Task["semverve:current"].invoke }
         assert_match(/Could not find version file/, error.message)
       end
     end
@@ -279,7 +279,7 @@ module VersionInc
 
         Task.new { |config| config.format = :simple }
 
-        error = assert_raise(Error) { Rake::Task["version_inc:current"].invoke }
+        error = assert_raise(Error) { Rake::Task["semverve:current"].invoke }
         assert_match(/Could not parse/, error.message)
       end
     end
@@ -292,7 +292,7 @@ module VersionInc
         Task.new
         Task.new
 
-        assert_equal 1, Rake.application.tasks.count { |task| task.name == "version_inc:current" }
+        assert_equal 1, Rake.application.tasks.count { |task| task.name == "semverve:current" }
       end
     end
 
@@ -303,7 +303,7 @@ module VersionInc
     end
 
     def reset_configuration
-      VersionInc.instance_variable_set(:@configuration, nil)
+      Semverve.instance_variable_set(:@configuration, nil)
     end
 
     def write_gemspec(name)

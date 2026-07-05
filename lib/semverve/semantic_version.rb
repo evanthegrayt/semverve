@@ -2,7 +2,7 @@
 
 require_relative "error"
 
-module VersionInc
+module Semverve
   class SemanticVersion
     PATTERN = /\A(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)\z/
 

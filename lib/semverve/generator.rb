@@ -6,7 +6,7 @@ require_relative "error"
 require_relative "formats"
 require_relative "semantic_version"
 
-module VersionInc
+module Semverve
   class Generator
     DEFAULT_VERSION = "0.1.0"
 
