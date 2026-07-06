@@ -10,6 +10,7 @@ Gem::Specification.new do |spec|
   spec.summary = %(Rake tasks for managing Ruby gem version files)
   spec.description = %(Semverve adds Rake tasks that read, generate, and increment Ruby gem version files.)
   spec.homepage = "https://github.com/evanthegrayt/semverve"
+  spec.required_ruby_version = ">= 3.2"
 
   unless spec.respond_to?(:metadata)
     raise "RubyGems 2.0 or newer is required to protect against " \

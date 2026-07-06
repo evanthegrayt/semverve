@@ -483,6 +483,21 @@ module Semverve
       end
     end
 
+    def test_gemspec_without_literal_name_fails_without_override
+      in_project do
+        write_file("my_gem.gemspec", <<~RUBY)
+          Gem::Specification.new do |spec|
+            spec.summary = "No name here"
+          end
+        RUBY
+
+        Task.new
+
+        error = assert_raise(Error) { Rake::Task["semverve:current"].invoke }
+        assert_match(/Could not infer gem name/, error.message)
+      end
+    end
+
     def test_missing_version_file_fails_loudly
       in_project do
         write_gemspec("my_gem")
@@ -652,6 +667,18 @@ module Semverve
       end
     end
 
+    def test_check_fix_reports_clean_doc_reference_files
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Install version 2.0.1.\n")
+
+        Task.new
+
+        assert_equal "Version references are current.\n", capture_stdout { Rake::Task["semverve:fix:references"].invoke }
+      end
+    end
+
     def test_check_honors_inline_ignore_markers
       in_project do
         write_gemspec("my_gem")
@@ -681,6 +708,20 @@ module Semverve
         write_file("README.md", "Install version 2.0.1.\n")
 
         Task.new
+
+        assert_equal "Version references are current.\n", capture_stdout { Rake::Task["semverve:check:references"].invoke }
+      end
+    end
+
+    def test_check_ignores_configured_non_scannable_doc_files
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("metadata.json", "{\"version\":\"1.0.0\"}\n")
+
+        Task.new do |config|
+          config.version_doc_reference_files = Rake::FileList["metadata.json"]
+        end
 
         assert_equal "Version references are current.\n", capture_stdout { Rake::Task["semverve:check:references"].invoke }
       end
@@ -806,6 +847,23 @@ module Semverve
         stdout, = capture_error(Error) { Rake::Task["semverve:check:metadata"].invoke }
 
         assert_match(/my_gem\.gemspec:\d+:\d+: gemspec version 2\.0\.0 -> 2\.0\.1/, stdout)
+      end
+    end
+
+    def test_check_metadata_uses_configured_gem_name_with_multiple_gemspecs
+      in_project do
+        write_gemspec("other_gem", version: "9.9.9")
+        write_gemspec("my_gem", version: "2.0.0")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new do |config|
+          config.gem_name = "my_gem"
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:metadata"].invoke }
+
+        assert_match(/my_gem\.gemspec:\d+:\d+: gemspec version 2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_no_match(/other_gem\.gemspec/, stdout)
       end
     end
 

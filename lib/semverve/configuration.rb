@@ -10,7 +10,16 @@ module Semverve
   ##
   # Mutable configuration used before Semverve resolves project defaults.
   class Configuration
+    ##
+    # Version-maintenance surfaces supported by umbrella check and fix tasks.
+    #
+    # @return [Array<Symbol>]
     VALID_VERSION_CHECKS = [:doc_references, :code_references, :metadata].freeze
+
+    ##
+    # Default Ruby pattern for code version literals that are safe to rewrite.
+    #
+    # @return [Regexp]
     DEFAULT_VERSION_CODE_REFERENCE_PATTERN = /^\s*(?:(?:[A-Z]\w*::)*(?:[A-Z]\w*VERSION[A-Z0-9_]*|VERSION)|(?:[a-z_]\w*|self)\.version)\s*=\s*(?<quote>["'])(?<version>\d+\.\d+\.\d+)\k<quote>/
 
     ##
