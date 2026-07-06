@@ -145,48 +145,6 @@ Semverve::Task.new do |config|
 end
 ```
 
-## Publishing generated docs
-Semverve also includes an optional GitHub Pages publishing task for generated
-documentation. It builds docs on your current branch, opens the publishing
-branch in a temporary Git worktree, copies the generated docs there, commits any
-changes, and pushes the publishing branch.
-
-Add this to your Rakefile:
-
-```ruby
-require "semverve/docs_publisher/task"
-
-Semverve::DocsPublisher::Task.new
-```
-
-This defines:
-
-```text
-rake docs:publish
-rake docs:publish:dry_run
-```
-
-The defaults are equivalent to:
-
-```ruby
-Semverve::DocsPublisher::Task.new do |task|
-  task.root = Dir.pwd
-  task.build_task = "rerdoc"
-  task.source_dir = "docs"
-  task.target_dir = "docs"
-  task.branch = "gh-pages"
-  task.remote = "origin"
-  task.commit_message = "Update generated documentation"
-  task.allow_dirty = false
-  task.push = true
-  task.output = $stdout
-end
-```
-
-`docs:publish` requires a clean working tree by default. Set
-`task.allow_dirty = true` only when you intentionally want to publish generated
-documentation from uncommitted source changes.
-
 ## Rails apps
 Rails applications do not need gem-style version files, but an application
 version can still be useful for release notes, support/debug screens,
