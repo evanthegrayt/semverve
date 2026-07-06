@@ -6,6 +6,8 @@ module Semverve
   ##
   # Value object for a MAJOR.MINOR.PATCH semantic version.
   class SemanticVersion
+    include Comparable
+
     ##
     # Regular expression for Semverve's supported version format.
     #
@@ -84,11 +86,31 @@ module Semverve
     end
 
     ##
+    # Compares semantic versions by major, minor, then patch.
+    #
+    # @param [Semverve::SemanticVersion] other
+    #
+    # @return [Integer, nil]
+    def <=>(other)
+      return unless other.is_a?(self.class)
+
+      to_a <=> other.to_a
+    end
+
+    ##
     # Version as +MAJOR.MINOR.PATCH+.
     #
     # @return [String]
     def to_s
-      [major, minor, patch].join(".")
+      to_a.join(".")
+    end
+
+    ##
+    # Version as +[major, minor, patch]+.
+    #
+    # @return [Array<Integer>]
+    def to_a
+      [major, minor, patch]
     end
   end
 end
