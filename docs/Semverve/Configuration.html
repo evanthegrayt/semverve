@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>class Semverve::Configuration - RDoc Documentation</title>
+
+
+  <meta
+    name="keywords"
+    content="ruby,class,Semverve::Configuration"
+  >
+
+    <meta
+      name="description"
+      content="class Semverve::Configuration: Mutable configuration used before Semverve resolves project defaults."
+    >
+
+
+
+
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="class Semverve::Configuration - RDoc Documentation">
+
+
+
+    <meta property="og:description" content="Mutable configuration used before Semverve resolves project defaults.">
+
+
+
+
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="class Semverve::Configuration - RDoc Documentation">
+
+
+
+    <meta name="twitter:description" content="Mutable configuration used before Semverve resolves project defaults.">
+
+
+
+<script type="text/javascript">
+  var rdoc_rel_prefix = "../";
+  var index_rel_prefix = "../";
+</script>
+
+<script
+  src="../js/theme-toggle.js?v=8.0.0"
+></script>
+
+<script
+  src="../js/search_navigation.js?v=8.0.0"
+  defer
+></script>
+
+<script
+  src="../js/search_data.js?v=8.0.0"
+  defer
+></script>
+
+<script
+  src="../js/search_ranker.js?v=8.0.0"
+  defer
+></script>
+
+<script
+  src="../js/search_controller.js?v=8.0.0"
+  defer
+></script>
+
+<script
+  src="../js/c_highlighter.js?v=8.0.0"
+  defer
+></script>
+
+<script
+  src="../js/bash_highlighter.js?v=8.0.0"
+  defer
+></script>
+
+<script
+  src="../js/aliki.js?v=8.0.0"
+  defer
+></script>
+
+<link
+  href="../css/rdoc.css?v=8.0.0"
+  rel="stylesheet"
+>
+
+
+
+
+<body role="document" class="class has-toc">
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <!-- Chevron (right arrow) - used for expand/collapse -->
+  <symbol
+    id="icon-chevron"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </symbol>
+
+  <!-- File/Document - Pages section -->
+  <symbol
+    id="icon-file"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path
+      d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+    ></path>
+
+    <polyline points="14 2 14 8 20 8"></polyline>
+  </symbol>
+
+  <!-- Layers/Stack - Classes and Modules section -->
+  <symbol
+    id="icon-layers"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+    <polyline points="2 17 12 22 22 17"></polyline>
+    <polyline points="2 12 12 17 22 12"></polyline>
+  </symbol>
+
+  <!-- Curly braces with C - Class Methods section -->
+  <symbol
+    id="icon-class-methods"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M6 3C3.5 3 2 4.5 2 7v3c0 1.5-1 2-1 2s1 .5 1 2v5c0 2.5 1.5 4 4 4"></path>
+    <path d="M18 3c2.5 0 4 1.5 4 4v3c0 1.5 1 2 1 2s-1 .5-1 2v5c0 2.5-1.5 4-4 4"></path>
+
+    <text
+      x="12"
+      y="17"
+      text-anchor="middle"
+      font-size="13"
+      font-weight="bold"
+      fill="currentColor"
+      stroke="none"
+    >
+      C
+    </text>
+  </symbol>
+
+  <!-- Curly braces with I - Instance Methods section -->
+  <symbol
+    id="icon-instance-methods"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M6 3C3.5 3 2 4.5 2 7v3c0 1.5-1 2-1 2s1 .5 1 2v5c0 2.5 1.5 4 4 4"></path>
+    <path d="M18 3c2.5 0 4 1.5 4 4v3c0 1.5 1 2 1 2s-1 .5-1 2v5c0 2.5-1.5 4-4 4"></path>
+
+    <text
+      x="12"
+      y="17"
+      text-anchor="middle"
+      font-size="13"
+      font-weight="bold"
+      fill="currentColor"
+      stroke="none"
+    >
+      I
+    </text>
+  </symbol>
+
+  <!-- Double chevrons up - Ancestors section -->
+  <symbol
+    id="icon-ancestors"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <polyline points="17 11 12 6 7 11"></polyline>
+    <polyline points="17 18 12 13 7 18"></polyline>
+  </symbol>
+
+  <!-- User with plus - Included Modules section -->
+  <symbol
+    id="icon-includes"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="8.5" cy="7" r="4"></circle>
+
+    <line
+      x1="20"
+      y1="8"
+      x2="20"
+      y2="14"
+    ></line>
+
+    <line
+      x1="23"
+      y1="11"
+      x2="17"
+      y2="11"
+    ></line>
+  </symbol>
+
+  <!-- User with check - Extended Modules section -->
+  <symbol
+    id="icon-extends"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+    <circle cx="8.5" cy="7" r="4"></circle>
+    <polyline points="17 11 19 13 23 9"></polyline>
+  </symbol>
+
+  <!-- List - Sections section -->
+  <symbol
+    id="icon-list"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <line
+      x1="8"
+      y1="6"
+      x2="21"
+      y2="6"
+    ></line>
+
+    <line
+      x1="8"
+      y1="12"
+      x2="21"
+      y2="12"
+    ></line>
+
+    <line
+      x1="8"
+      y1="18"
+      x2="21"
+      y2="18"
+    ></line>
+
+    <line
+      x1="3"
+      y1="6"
+      x2="3.01"
+      y2="6"
+    ></line>
+
+    <line
+      x1="3"
+      y1="12"
+      x2="3.01"
+      y2="12"
+    ></line>
+
+    <line
+      x1="3"
+      y1="18"
+      x2="3.01"
+      y2="18"
+    ></line>
+  </symbol>
+</svg>
+
+<header class="top-navbar">
+  <a href="../index.html" class="navbar-brand">
+    RDoc Documentation
+  </a>
+
+  <!-- Desktop search bar -->
+  <div class="navbar-search navbar-search-desktop" role="search">
+    <form action="#" method="get" accept-charset="utf-8">
+      <input id="search-field" role="combobox" aria-label="Search"
+             aria-autocomplete="list" aria-controls="search-results-desktop"
+             type="text" name="search" placeholder="Search (/) for a class, method..."
+             spellcheck="false" autocomplete="off"
+             title="Type to search, Up and Down to navigate, Enter to load">
+      <ul id="search-results-desktop" aria-label="Search Results"
+          aria-busy="false" aria-expanded="false"
+          aria-atomic="false" class="initially-hidden search-results"></ul>
+    </form>
+  </div>
+
+  <!-- Mobile search icon button -->
+  <button id="search-toggle" class="navbar-search-mobile" aria-label="Open search" type="button">
+    <span aria-hidden="true">🔍</span>
+  </button>
+
+  <!-- Theme toggle button -->
+  <button id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode" type="button">
+    <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+  </button>
+</header>
+
+<!-- Search Modal (Mobile) -->
+<div id="search-modal" class="search-modal" hidden aria-modal="true" role="dialog" aria-label="Search">
+  <div class="search-modal-backdrop"></div>
+  <div class="search-modal-content">
+    <div class="search-modal-header">
+      <form class="search-modal-form" action="#" method="get" accept-charset="utf-8">
+        <span class="search-modal-icon" aria-hidden="true">🔍</span>
+        <input id="search-field-mobile" role="combobox" aria-label="Search"
+               aria-autocomplete="list" aria-controls="search-results-mobile"
+               type="text" name="search" placeholder="Search documentation"
+               spellcheck="false" autocomplete="off">
+        <button type="button" class="search-modal-close" aria-label="Close search" id="search-modal-close">
+          <span aria-hidden="true">esc</span>
+        </button>
+      </form>
+    </div>
+    <div class="search-modal-body">
+      <ul id="search-results-mobile" aria-label="Search Results"
+          aria-busy="false" aria-expanded="false"
+          aria-atomic="false" class="search-results search-modal-results initially-hidden"></ul>
+      <div class="search-modal-empty">
+        <p>No recent searches</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="sidebar-navigation-toggle" role="button" tabindex="0" aria-label="Toggle sidebar" aria-expanded="false" aria-controls="sidebar-navigation">
+  <span aria-hidden="true">&#9776;</span>
+</div>
+
+
+<nav id="sidebar-navigation" role="navigation" hidden>
+  
+
+
+
+
+
+  
+
+  
+<div id="parent-class-section" class="nav-section">
+  <details class="nav-section-collapsible" open>
+    <summary class="nav-section-header">
+      <span class="nav-section-icon">
+        <svg><use href="#icon-ancestors"></use></svg>
+      </span>
+      <span class="nav-section-title">Ancestors</span>
+      <span class="nav-section-chevron">
+        <svg><use href="#icon-chevron"></use></svg>
+      </span>
+    </summary>
+    <ul><li>Object</li></ul>
+  </details>
+</div>
+
+
+  
+
+  
+
+  
+  <div class="nav-section">
+    <details class="nav-section-collapsible" open>
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg><use href="#icon-class-methods"></use></svg>
+        </span>
+        <span class="nav-section-title">Class Methods</span>
+        <span class="nav-section-chevron">
+          <svg><use href="#icon-chevron"></use></svg>
+        </span>
+      </summary>
+      <ul class="nav-list" role="directory">
+
+        <li ><a href="#method-c-new">new</a></li>
+
+      </ul>
+    </details>
+  </div>
+
+
+
+  <div class="nav-section">
+    <details class="nav-section-collapsible" open>
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg><use href="#icon-instance-methods"></use></svg>
+        </span>
+        <span class="nav-section-title">Instance Methods</span>
+        <span class="nav-section-chevron">
+          <svg><use href="#icon-chevron"></use></svg>
+        </span>
+      </summary>
+      <ul class="nav-list" role="directory">
+
+        <li ><a href="#method-i-expanded_root">expanded_root</a></li>
+
+        <li ><a href="#method-i-format-3D">format=</a></li>
+
+        <li ><a href="#method-i-gem_name-3D">gem_name=</a></li>
+
+        <li ><a href="#method-i-module_name-3D">module_name=</a></li>
+
+        <li ><a href="#method-i-normalize_version_checks">normalize_version_checks</a></li>
+
+        <li ><a href="#method-i-normalized_format">normalized_format</a></li>
+
+        <li ><a href="#method-i-normalized_version_checks">normalized_version_checks</a></li>
+
+        <li ><a href="#method-i-normalized_version_reference_mode">normalized_version_reference_mode</a></li>
+
+        <li ><a href="#method-i-preset-3D">preset=</a></li>
+
+        <li ><a href="#method-i-resolved">resolved</a></li>
+
+        <li ><a href="#method-i-resolved_value">resolved_value</a></li>
+
+        <li ><a href="#method-i-root-3D">root=</a></li>
+
+        <li ><a href="#method-i-validate_version_code_reference_pattern">validate_version_code_reference_pattern</a></li>
+
+        <li ><a href="#method-i-version_checks-3D">version_checks=</a></li>
+
+        <li ><a href="#method-i-version_code_reference_pattern-3D">version_code_reference_pattern=</a></li>
+
+        <li ><a href="#method-i-version_file-3D">version_file=</a></li>
+
+      </ul>
+    </details>
+  </div>
+
+
+  <div id="classindex-section" class="nav-section">
+  <details class="nav-section-collapsible" open>
+    <summary class="nav-section-header">
+      <span class="nav-section-icon">
+        <svg><use href="#icon-layers"></use></svg>
+      </span>
+      <span class="nav-section-title">Classes and Modules</span>
+      <span class="nav-section-chevron">
+        <svg><use href="#icon-chevron"></use></svg>
+      </span>
+    </summary>
+
+    <ul class="link-list nav-list"><li><details open><summary><code><a href="../Semverve.html">Semverve</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/Configuration.html">Configuration</a></code></li><li><details><summary><code><a href="../Semverve/DocsPublisher.html">DocsPublisher</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/DocsPublisher/Shell.html">Shell</a></code></li><li><code><a href="../Semverve/DocsPublisher/Task.html">Task</a></code></li></ul></details></li><li><code><a href="../Semverve/Error.html">Error</a></code></li><li><code><a href="../Semverve/FileListResolver.html">FileListResolver</a></code></li><li><details><summary><code><a href="../Semverve/Formats.html">Formats</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/Formats/ModuleConstants.html">ModuleConstants</a></code></li><li><code><a href="../Semverve/Formats/SimpleString.html">SimpleString</a></code></li></ul></details></li><li><code><a href="../Semverve/Generator.html">Generator</a></code></li><li><details><summary><code><a href="../Semverve/Presets.html">Presets</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/Presets/Rails.html">Rails</a></code></li></ul></details></li><li><code><a href="../Semverve/ProjectMetadata.html">ProjectMetadata</a></code></li><li><code><a href="../Semverve/Railtie.html">Railtie</a></code></li><li><code><a href="../Semverve/ResolvedConfiguration.html">ResolvedConfiguration</a></code></li><li><code><a href="../Semverve/SemanticVersion.html">SemanticVersion</a></code></li><li><code><a href="../Semverve/Task.html">Task</a></code></li><li><code><a href="../Semverve/Version.html">Version</a></code></li><li><details><summary><code><a href="../Semverve/VersionCodeReferences.html">VersionCodeReferences</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/VersionCodeReferences/Finding.html">Finding</a></code></li><li><code><a href="../Semverve/VersionCodeReferences/FixResult.html">FixResult</a></code></li></ul></details></li><li><details><summary><code><a href="../Semverve/VersionFile.html">VersionFile</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/VersionFile/UpdateResult.html">UpdateResult</a></code></li></ul></details></li><li><details><summary><code><a href="../Semverve/VersionMetadata.html">VersionMetadata</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/VersionMetadata/Finding.html">Finding</a></code></li><li><code><a href="../Semverve/VersionMetadata/FixResult.html">FixResult</a></code></li></ul></details></li><li><details><summary><code><a href="../Semverve/VersionReferences.html">VersionReferences</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/VersionReferences/Finding.html">Finding</a></code></li><li><code><a href="../Semverve/VersionReferences/FixResult.html">FixResult</a></code></li></ul></details></li></ul></details></li></ul>
+  </details>
+</div>
+
+</nav>
+
+<main role="main" aria-labelledby="class-semverve-configuration">
+  
+  
+    <ol role="navigation" aria-label="Breadcrumb navigation" class="breadcrumb">
+      
+      <li>
+        
+        <a href="../Semverve.html">Semverve</a><span class="separator">::</span>
+        
+      </li>
+      
+      <li>
+        
+        <span>Configuration</span>
+        
+      </li>
+      
+    </ol>
+  
+
+  <span id="class-Semverve::Configuration" class="legacy-anchor"></span>
+  <h1 id="class-semverve-configuration" class="anchor-link class page-title">
+    <span class="page-title-kind">class</span>
+    <span class="page-title-name">Semverve::Configuration</span>
+  </h1>
+
+  <section class="description">
+    
+<p>Mutable configuration used before <a href="../Semverve.html"><code>Semverve</code></a> resolves project defaults.</p>
+
+  </section>
+
+
+  <span id="5Buntitled-5D" class="legacy-anchor"></span>
+  <section class="documentation-section anchor-link">
+
+
+
+
+
+    <section class="constants-list">
+      <header>
+        <h3 id="untitled-constants"><a href="#untitled-constants">Constants</a></h3>
+      </header>
+      <dl>
+
+        <dt id="DEFAULT_VERSION_CODE_REFERENCE_PATTERN">DEFAULT_VERSION_CODE_REFERENCE_PATTERN</dt>
+
+        <dd>
+
+          <p>Default Ruby pattern for code version literals that are safe to rewrite.</p>
+
+<p>@return [Regexp]</p>
+        </dd>
+
+
+        <dt id="VALID_VERSION_CHECKS">VALID_VERSION_CHECKS</dt>
+
+        <dd>
+
+          <p>Version-maintenance surfaces supported by umbrella check and fix tasks.</p>
+
+<p>@return [Array&lt;Symbol&gt;]</p>
+        </dd>
+
+
+      </dl>
+    </section>
+
+
+
+    <section class="attribute-method-details method-section">
+      <header>
+        <h3 id="untitled-attributes"><a href="#untitled-attributes">Attributes</a></h3>
+      </header>
+
+
+      <div id="attribute-i-bundle_lock" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-bundle_lock" title="Link to this attribute">
+            <span class="method-name">bundle_lock</span>
+            <span class="attribute-access-type">[RW]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Whether increments should run +bundle lock+ after writing a version.</p>
+
+<p>@return [Boolean]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-command_runner" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-command_runner" title="Link to this attribute">
+            <span class="method-name">command_runner</span>
+            <span class="attribute-access-type">[RW]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Callable used to run shell commands such as +bundle lock+.</p>
+
+<p>@return [#call]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-format" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-format" title="Link to this attribute">
+            <span class="method-name">format</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Version-file format to read, replace, or generate.</p>
+
+<p>@return [Symbol, String]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-gem_name" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-gem_name" title="Link to this attribute">
+            <span class="method-name">gem_name</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Explicit gem name to use instead of inferring one from the project.</p>
+
+<p>@return [String, nil]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-module_name" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-module_name" title="Link to this attribute">
+            <span class="method-name">module_name</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Explicit Ruby module name to use in generated version files.</p>
+
+<p>@return [String, nil]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-preset" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-preset" title="Link to this attribute">
+            <span class="method-name">preset</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Framework preset used to apply project defaults.</p>
+
+<p>@return [Symbol, String, nil]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-root" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-root" title="Link to this attribute">
+            <span class="method-name">root</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Project root used when inferring metadata and expanding paths.</p>
+
+<p>@return [String, nil]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-version_checks" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-version_checks" title="Link to this attribute">
+            <span class="method-name">version_checks</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Version-maintenance surfaces run by the umbrella check and fix tasks.</p>
+
+<p>@return [Array&lt;Symbol, String&gt;]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-version_code_reference_files" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-version_code_reference_files" title="Link to this attribute">
+            <span class="method-name">version_code_reference_files</span>
+            <span class="attribute-access-type">[RW]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Code files to scan for safe version literals.</p>
+
+<p>@return [Rake::FileList]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-version_code_reference_pattern" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-version_code_reference_pattern" title="Link to this attribute">
+            <span class="method-name">version_code_reference_pattern</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Pattern used to find safe version literals in code files.</p>
+
+<p>@return [Regexp]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-version_doc_reference_files" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-version_doc_reference_files" title="Link to this attribute">
+            <span class="method-name">version_doc_reference_files</span>
+            <span class="attribute-access-type">[RW]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Documentation files to scan for version references.</p>
+
+<p>@return [Rake::FileList]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-version_file" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-version_file" title="Link to this attribute">
+            <span class="method-name">version_file</span>
+            <span class="attribute-access-type">[R]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Explicit version-file path relative to the project root.</p>
+
+<p>@return [String, nil]</p>
+
+        </div>
+      </div>
+
+      <div id="attribute-i-version_reference_mode" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-i-version_reference_mode" title="Link to this attribute">
+            <span class="method-name">version_reference_mode</span>
+            <span class="attribute-access-type">[RW]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Version-reference comparison mode.</p>
+
+<p>@return [Symbol, String]</p>
+
+        </div>
+      </div>
+
+    </section>
+
+
+
+
+
+
+     <section id="public-class-untitled-method-details" class="method-section anchor-link">
+       <header>
+         <h3 id="public-class-untitled-methods"><a href="#public-class-untitled-methods">Public Class Methods</a></h3>
+       </header>
+
+
+      <div id="method-c-new" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-c-new" title="Link to this method">
+                  <span class="method-name">new</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="new-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 107</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>
+  <span class="ruby-ivar">@explicit_attributes</span> = []
+  <span class="ruby-ivar">@bundle_lock</span> = <span class="ruby-keyword">false</span>
+  <span class="ruby-ivar">@command_runner</span> = <span class="ruby-operator">-&gt;</span>(<span class="ruby-identifier">command</span>) { <span class="ruby-identifier">system</span>(<span class="ruby-identifier">command</span>) }
+  <span class="ruby-ivar">@format</span> = <span class="ruby-value">:</span><span class="ruby-value">module</span>
+  <span class="ruby-ivar">@preset</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-ivar">@version_code_reference_files</span> = <span class="ruby-constant">Rake</span><span class="ruby-operator">::</span><span class="ruby-constant">FileList</span>[]
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">version_code_reference_pattern</span> = <span class="ruby-constant">DEFAULT_VERSION_CODE_REFERENCE_PATTERN</span>
+  <span class="ruby-ivar">@version_doc_reference_files</span> = <span class="ruby-constant">Rake</span><span class="ruby-operator">::</span><span class="ruby-constant">FileList</span>[<span class="ruby-string">&quot;</span><span class="ruby-string">README*</span><span class="ruby-string">&quot;</span>, <span class="ruby-string">&quot;</span><span class="ruby-string">**/README*</span><span class="ruby-string">&quot;</span>].<span class="ruby-identifier">exclude</span>(
+    <span class="ruby-string">&quot;</span><span class="ruby-string">.git/**/*</span><span class="ruby-string">&quot;</span>,
+    <span class="ruby-string">&quot;</span><span class="ruby-string">coverage/**/*</span><span class="ruby-string">&quot;</span>,
+    <span class="ruby-string">&quot;</span><span class="ruby-string">tmp/**/*</span><span class="ruby-string">&quot;</span>,
+    <span class="ruby-string">&quot;</span><span class="ruby-string">vendor/**/*</span><span class="ruby-string">&quot;</span>
+  )
+  <span class="ruby-ivar">@version_reference_mode</span> = <span class="ruby-value">:</span><span class="ruby-value">older</span>
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">version_checks</span> = <span class="ruby-constant">VALID_VERSION_CHECKS</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Initializes configuration with Semverve’s default settings.</p>
+
+<p>@return [Semverve::Configuration]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+    </section>
+
+
+
+
+
+
+
+     <section id="public-instance-untitled-method-details" class="method-section anchor-link">
+       <header>
+         <h3 id="public-instance-untitled-methods"><a href="#public-instance-untitled-methods">Public Instance Methods</a></h3>
+       </header>
+
+
+      <div id="method-i-expanded_root" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-expanded_root" title="Link to this method">
+                  <span class="method-name">expanded_root</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="expanded_root-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 234</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">expanded_root</span>
+  <span class="ruby-constant">File</span>.<span class="ruby-identifier">expand_path</span>(<span class="ruby-identifier">resolved_value</span>(<span class="ruby-value">:</span><span class="ruby-value">root</span>) <span class="ruby-operator">||</span> <span class="ruby-constant">Dir</span>.<span class="ruby-identifier">pwd</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Absolute project root.</p>
+
+<p>@return [String]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-format-3D" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-format-3D" title="Link to this method">
+                  <span class="method-name">format=</span>
+                  <span class="method-args">(format)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="format-3D-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 154</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">format=</span>(<span class="ruby-identifier">format</span>)
+  <span class="ruby-identifier">set_explicit</span>(<span class="ruby-value">:</span><span class="ruby-value">format</span>, <span class="ruby-identifier">format</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Sets the version-file format.</p>
+
+<p>@param [Symbol, String] format</p>
+
+<p>@return [Symbol, String]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-gem_name-3D" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-gem_name-3D" title="Link to this method">
+                  <span class="method-name">gem_name=</span>
+                  <span class="method-args">(gem_name)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="gem_name-3D-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 164</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">gem_name=</span>(<span class="ruby-identifier">gem_name</span>)
+  <span class="ruby-identifier">set_explicit</span>(<span class="ruby-value">:</span><span class="ruby-value">gem_name</span>, <span class="ruby-identifier">gem_name</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Sets the gem name used for metadata checks.</p>
+
+<p>@param [String, nil] <a href="Configuration.html#attribute-i-gem_name"><code>gem_name</code></a></p>
+
+<p>@return [String, nil]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-module_name-3D" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-module_name-3D" title="Link to this method">
+                  <span class="method-name">module_name=</span>
+                  <span class="method-args">(module_name)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="module_name-3D-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 174</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">module_name=</span>(<span class="ruby-identifier">module_name</span>)
+  <span class="ruby-identifier">set_explicit</span>(<span class="ruby-value">:</span><span class="ruby-value">module_name</span>, <span class="ruby-identifier">module_name</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Sets the module name used for generated version files.</p>
+
+<p>@param [String, nil] <a href="Configuration.html#attribute-i-module_name"><code>module_name</code></a></p>
+
+<p>@return [String, nil]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-normalize_version_checks" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-normalize_version_checks" title="Link to this method">
+                  <span class="method-name">normalize_version_checks</span>
+                  <span class="method-args">(checks)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="normalize_version_checks-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 281</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">normalize_version_checks</span>(<span class="ruby-identifier">checks</span>)
+  <span class="ruby-identifier">normalized_checks</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">checks</span>).<span class="ruby-identifier">map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">check</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">check</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:</span><span class="ruby-value">to_sym</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">check</span>.<span class="ruby-identifier">to_sym</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">check</span>
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-identifier">normalized_checks</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">normalized_checks</span>.<span class="ruby-identifier">all?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">check</span><span class="ruby-operator">|</span> <span class="ruby-constant">VALID_VERSION_CHECKS</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">check</span>) }
+
+  <span class="ruby-identifier">invalid_checks</span> = <span class="ruby-identifier">normalized_checks</span>.<span class="ruby-identifier">reject</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">check</span><span class="ruby-operator">|</span> <span class="ruby-constant">VALID_VERSION_CHECKS</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">check</span>) }
+  <span class="ruby-identifier">valid_check_names</span> = <span class="ruby-constant">VALID_VERSION_CHECKS</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:</span><span class="ruby-value">inspect</span>)
+  <span class="ruby-identifier">valid_checks</span> = <span class="ruby-string">&quot;</span><span class="ruby-string">#{</span><span class="ruby-identifier">valid_check_names</span>[<span class="ruby-value">0</span>...-<span class="ruby-value">1</span>].<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;</span><span class="ruby-string">, </span><span class="ruby-string">&quot;</span>)<span class="ruby-string">}</span><span class="ruby-string">, or </span><span class="ruby-string">#{</span><span class="ruby-identifier">valid_check_names</span>.<span class="ruby-identifier">last</span><span class="ruby-string">}</span><span class="ruby-string">&quot;</span>
+  <span class="ruby-identifier">raise</span> <span class="ruby-constant">Error</span>, <span class="ruby-string">&quot;</span><span class="ruby-string">Unknown version check </span><span class="ruby-string">#{</span><span class="ruby-identifier">invalid_checks</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:</span><span class="ruby-value">inspect</span>).<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;</span><span class="ruby-string">, </span><span class="ruby-string">&quot;</span>)<span class="ruby-string">}</span><span class="ruby-string">. Use </span><span class="ruby-string">#{</span><span class="ruby-identifier">valid_checks</span><span class="ruby-string">}</span><span class="ruby-string">.</span><span class="ruby-string">&quot;</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Normalizes and validates umbrella version checks.</p>
+
+<p>@param [Array&lt;Symbol, String&gt;] checks</p>
+
+<p>@return [Array&lt;Symbol&gt;]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-normalized_format" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-normalized_format" title="Link to this method">
+                  <span class="method-name">normalized_format</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="normalized_format-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 242</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">normalized_format</span>
+  <span class="ruby-identifier">resolved_value</span>(<span class="ruby-value">:</span><span class="ruby-value">format</span>).<span class="ruby-identifier">to_sym</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Configured format normalized for lookup.</p>
+
+<p>@return [Symbol]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-normalized_version_checks" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-normalized_version_checks" title="Link to this method">
+                  <span class="method-name">normalized_version_checks</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="normalized_version_checks-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 263</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">normalized_version_checks</span>
+  <span class="ruby-identifier">normalize_version_checks</span>(<span class="ruby-identifier">version_checks</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Configured version checks normalized for lookup.</p>
+
+<p>@return [Array&lt;Symbol&gt;]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-normalized_version_reference_mode" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-normalized_version_reference_mode" title="Link to this method">
+                  <span class="method-name">normalized_version_reference_mode</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="normalized_version_reference_mode-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 271</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">normalized_version_reference_mode</span>
+  <span class="ruby-identifier">version_reference_mode</span>.<span class="ruby-identifier">to_sym</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Configured version-reference mode normalized for lookup.</p>
+
+<p>@return [Symbol]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-preset-3D" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-preset-3D" title="Link to this method">
+                  <span class="method-name">preset=</span>
+                  <span class="method-args">(preset)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="preset-3D-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 184</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">preset=</span>(<span class="ruby-identifier">preset</span>)
+  <span class="ruby-ivar">@preset_defaults</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-ivar">@preset</span> = <span class="ruby-identifier">preset</span>.<span class="ruby-identifier">nil?</span> <span class="ruby-operator">?</span> <span class="ruby-keyword">nil</span> <span class="ruby-operator">:</span> <span class="ruby-constant">Presets</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-identifier">preset</span>).<span class="ruby-identifier">name</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Sets the framework preset used for project defaults.</p>
+
+<p>@param [Symbol, String, nil] preset</p>
+
+<p>@return [Symbol, nil]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-resolved" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-resolved" title="Link to this method">
+                  <span class="method-name">resolved</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="resolved-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 129</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">resolved</span>
+  <span class="ruby-identifier">metadata</span> = <span class="ruby-constant">ProjectMetadata</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">self</span>)
+
+  <span class="ruby-constant">ResolvedConfiguration</span>.<span class="ruby-identifier">new</span>(
+    <span class="ruby-value">bundle_lock</span><span class="ruby-value">:</span> <span class="ruby-identifier">bundle_lock</span>,
+    <span class="ruby-value">command_runner</span><span class="ruby-value">:</span> <span class="ruby-identifier">command_runner</span>,
+    <span class="ruby-value">format</span><span class="ruby-value">:</span> <span class="ruby-identifier">normalized_format</span>,
+    <span class="ruby-value">gem_name</span><span class="ruby-value">:</span> <span class="ruby-identifier">metadata</span>.<span class="ruby-identifier">gem_name</span>,
+    <span class="ruby-value">module_name</span><span class="ruby-value">:</span> <span class="ruby-identifier">metadata</span>.<span class="ruby-identifier">module_name</span>,
+    <span class="ruby-value">root</span><span class="ruby-value">:</span> <span class="ruby-identifier">expanded_root</span>,
+    <span class="ruby-value">version_file</span><span class="ruby-value">:</span> <span class="ruby-identifier">metadata</span>.<span class="ruby-identifier">version_file</span>,
+    <span class="ruby-value">version_checks</span><span class="ruby-value">:</span> <span class="ruby-identifier">normalized_version_checks</span>,
+    <span class="ruby-value">version_code_reference_files</span><span class="ruby-value">:</span> <span class="ruby-identifier">version_code_reference_files</span>,
+    <span class="ruby-value">version_code_reference_pattern</span><span class="ruby-value">:</span> <span class="ruby-identifier">version_code_reference_pattern</span>,
+    <span class="ruby-value">version_doc_reference_files</span><span class="ruby-value">:</span> <span class="ruby-identifier">version_doc_reference_files</span>,
+    <span class="ruby-value">version_reference_mode</span><span class="ruby-value">:</span> <span class="ruby-identifier">normalized_version_reference_mode</span>
+  )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Resolves explicit configuration and inferred project metadata.</p>
+
+<p>@return [Semverve::ResolvedConfiguration]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-resolved_value" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-resolved_value" title="Link to this method">
+                  <span class="method-name">resolved_value</span>
+                  <span class="method-args">(attribute)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="resolved_value-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 252</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">resolved_value</span>(<span class="ruby-identifier">attribute</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">attribute</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">explicit_attribute?</span>(<span class="ruby-identifier">attribute</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-identifier">preset_defaults</span>[<span class="ruby-identifier">attribute</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">preset_defaults</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-identifier">attribute</span>)
+
+  <span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">attribute</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Resolved value for a configurable attribute before metadata inference.</p>
+
+<p>@param [Symbol] attribute</p>
+
+<p>@return [Object]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-root-3D" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-root-3D" title="Link to this method">
+                  <span class="method-name">root=</span>
+                  <span class="method-args">(root)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="root-3D-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 195</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">root=</span>(<span class="ruby-identifier">root</span>)
+  <span class="ruby-identifier">set_explicit</span>(<span class="ruby-value">:</span><span class="ruby-value">root</span>, <span class="ruby-identifier">root</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Sets the project root used when expanding paths.</p>
+
+<p>@param [String, nil] root</p>
+
+<p>@return [String, nil]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-validate_version_code_reference_pattern" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-validate_version_code_reference_pattern" title="Link to this method">
+                  <span class="method-name">validate_version_code_reference_pattern</span>
+                  <span class="method-args">(pattern)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="validate_version_code_reference_pattern-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 299</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">validate_version_code_reference_pattern</span>(<span class="ruby-identifier">pattern</span>)
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">pattern</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Regexp</span>)
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">Error</span>, <span class="ruby-string">&quot;</span><span class="ruby-string">version_code_reference_pattern must be a Regexp.</span><span class="ruby-string">&quot;</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">pattern</span>.<span class="ruby-identifier">named_captures</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-string">&quot;</span><span class="ruby-string">version</span><span class="ruby-string">&quot;</span>)
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">Error</span>, <span class="ruby-string">&quot;</span><span class="ruby-string">version_code_reference_pattern must include a named capture called version.</span><span class="ruby-string">&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Validates the configured code reference pattern.</p>
+
+<p>@param [Object] pattern</p>
+
+<p>@return [void]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-version_checks-3D" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-version_checks-3D" title="Link to this method">
+                  <span class="method-name">version_checks=</span>
+                  <span class="method-args">(checks)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="version_checks-3D-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 226</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">version_checks=</span>(<span class="ruby-identifier">checks</span>)
+  <span class="ruby-ivar">@version_checks</span> = <span class="ruby-identifier">normalize_version_checks</span>(<span class="ruby-identifier">checks</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Sets the version-maintenance surfaces run by umbrella tasks.</p>
+
+<p>@param [Array&lt;Symbol, String&gt;] checks</p>
+
+<p>@return [Array&lt;Symbol&gt;]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-version_code_reference_pattern-3D" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-version_code_reference_pattern-3D" title="Link to this method">
+                  <span class="method-name">version_code_reference_pattern=</span>
+                  <span class="method-args">(pattern)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="version_code_reference_pattern-3D-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 215</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">version_code_reference_pattern=</span>(<span class="ruby-identifier">pattern</span>)
+  <span class="ruby-identifier">validate_version_code_reference_pattern</span>(<span class="ruby-identifier">pattern</span>)
+  <span class="ruby-ivar">@version_code_reference_pattern</span> = <span class="ruby-identifier">pattern</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Sets the pattern used to find safe version literals in code files.</p>
+
+<p>@param [Regexp] pattern</p>
+
+<p>@return [Regexp]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-version_file-3D" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-version_file-3D" title="Link to this method">
+                  <span class="method-name">version_file=</span>
+                  <span class="method-args">(version_file)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="version_file-3D-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/configuration.rb, line 205</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">version_file=</span>(<span class="ruby-identifier">version_file</span>)
+  <span class="ruby-identifier">set_explicit</span>(<span class="ruby-value">:</span><span class="ruby-value">version_file</span>, <span class="ruby-identifier">version_file</span>)
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Sets the version-file path relative to the project root.</p>
+
+<p>@param [String, nil] <a href="Configuration.html#attribute-i-version_file"><code>version_file</code></a></p>
+
+<p>@return [String, nil]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+    </section>
+
+
+
+
+  </section>
+
+</main>
+
+<aside id="table-of-contents" class="table-of-contents" role="complementary" aria-label="Table of Contents">
+  <div class="toc-sticky">
+    <h3 class="toc-heading">On This Page</h3>
+    <nav class="toc-nav" id="toc-nav" aria-label="Page sections">
+      <!-- Generated by JavaScript based on page headings -->
+    </nav>
+  </div>
+</aside>
+
+
+<footer class="site-footer">
+  
+
+  <div class="footer-bottom">
+    <p>
+      Generated by <a href="https://ruby.github.io/rdoc/">RDoc 8.0.0</a>
+      using the Aliki theme by <a href="http://st0012.dev">Stan Lo</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+
