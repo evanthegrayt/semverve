@@ -3,11 +3,39 @@
 require_relative "error"
 
 module Semverve
+  ##
+  # Value object for a MAJOR.MINOR.PATCH semantic version.
   class SemanticVersion
+    ##
+    # Regular expression for Semverve's supported version format.
+    #
+    # @return [Regexp]
     PATTERN = /\A(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)\z/
 
-    attr_reader :major, :minor, :patch
+    ##
+    # Major version number.
+    #
+    # @return [Integer]
+    attr_reader :major
 
+    ##
+    # Minor version number.
+    #
+    # @return [Integer]
+    attr_reader :minor
+
+    ##
+    # Patch version number.
+    #
+    # @return [Integer]
+    attr_reader :patch
+
+    ##
+    # Parses a value into a semantic version.
+    #
+    # @param [#to_s] value
+    #
+    # @return [Semverve::SemanticVersion]
     def self.parse(value)
       match = value.to_s.match(PATTERN)
 
@@ -22,12 +50,26 @@ module Semverve
       )
     end
 
+    ##
+    # Initializes a semantic version.
+    #
+    # @param [Integer] major
+    # @param [Integer] minor
+    # @param [Integer] patch
+    #
+    # @return [Semverve::SemanticVersion]
     def initialize(major:, minor:, patch:)
       @major = major
       @minor = minor
       @patch = patch
     end
 
+    ##
+    # Returns a new semantic version with the requested level incremented.
+    #
+    # @param [Symbol, String] level
+    #
+    # @return [Semverve::SemanticVersion]
     def increment(level)
       case level.to_sym
       when :major
@@ -41,6 +83,10 @@ module Semverve
       end
     end
 
+    ##
+    # Version as +MAJOR.MINOR.PATCH+.
+    #
+    # @return [String]
     def to_s
       [major, minor, patch].join(".")
     end

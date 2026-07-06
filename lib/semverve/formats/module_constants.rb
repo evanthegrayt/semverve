@@ -5,13 +5,26 @@ require_relative "../semantic_version"
 
 module Semverve
   module Formats
+    ##
+    # Handles version files with MAJOR, MINOR, and PATCH constants.
     class ModuleConstants
+      ##
+      # Mapping of semantic-version parts to Ruby constant names.
+      #
+      # @return [Hash<Symbol, String>]
       CONSTANTS = {
         major: "MAJOR",
         minor: "MINOR",
         patch: "PATCH"
       }.freeze
 
+      ##
+      # Parses a semantic version from module-constant content.
+      #
+      # @param [String] content
+      # @param [String] path
+      #
+      # @return [Semverve::SemanticVersion]
       def parse(content, path:)
         SemanticVersion.new(
           major: constant_value(content, path, :major),
@@ -20,6 +33,14 @@ module Semverve
         )
       end
 
+      ##
+      # Replaces MAJOR, MINOR, and PATCH values in module-constant content.
+      #
+      # @param [String] content
+      # @param [Semverve::SemanticVersion] version
+      # @param [String] path
+      #
+      # @return [String]
       def replace(content, version, path:)
         CONSTANTS.reduce(content) do |updated, (part, constant)|
           pattern = /^(\s*#{constant}\s*=\s*)\d+/
@@ -33,14 +54,22 @@ module Semverve
         end
       end
 
+      ##
+      # Generates a module-constant version file.
+      #
+      # @param [Semverve::SemanticVersion] version
+      # @param [String] module_name
+      #
+      # @return [String]
       def generate(version, module_name:)
         <<~RUBY
           # frozen_string_literal: true
 
+          ##
+          # Namespace for #{module_name}.
           module #{module_name}
             ##
-            # Module that contains all gem version information. Follows semantic
-            # versioning. Read: https://semver.org/
+            # Semantic version information for #{module_name}.
             module Version
               ##
               # Major version.
@@ -77,7 +106,6 @@ module Semverve
               def to_s
                 to_a.join(".")
               end
-
             end
 
             ##
@@ -91,6 +119,14 @@ module Semverve
 
       private
 
+      ##
+      # Extracts one semantic-version constant from content.
+      #
+      # @param [String] content
+      # @param [String] path
+      # @param [Symbol] part
+      #
+      # @return [Integer]
       def constant_value(content, path, part)
         constant = CONSTANTS.fetch(part)
         match = content.match(/^\s*#{constant}\s*=\s*(\d+)/)
