@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "configuration"
 require_relative "file_list_resolver"
 require_relative "semantic_version"
 
@@ -11,7 +12,7 @@ module Semverve
     # Ruby assignments that are safe enough to rewrite automatically.
     #
     # @return [Regexp]
-    RUBY_ASSIGNMENT_PATTERN = /^(\s*(?:(?:[A-Z]\w*::)*(?:[A-Z]\w*VERSION[A-Z0-9_]*|VERSION)|(?:[a-z_]\w*|self)\.version)\s*=\s*)(["'])(\d+\.\d+\.\d+)(\2)/
+    RUBY_ASSIGNMENT_PATTERN = Configuration::DEFAULT_VERSION_CODE_REFERENCE_PATTERN
 
     ##
     # A code version literal found in a configured file.
@@ -150,6 +151,14 @@ module Semverve
     end
 
     ##
+    # Configured pattern used to find code version literals.
+    #
+    # @return [Regexp]
+    def pattern
+      configuration.version_code_reference_pattern
+    end
+
+    ##
     # Absolute files to scan.
     #
     # @return [Array<String>]
@@ -168,16 +177,16 @@ module Semverve
     # @return [Array<Semverve::VersionCodeReferences::Finding>]
     def findings_for_file(path)
       File.readlines(path).filter_map.with_index(1) do |line, line_number|
-        match = line.match(RUBY_ASSIGNMENT_PATTERN)
+        match = line.match(pattern)
         next unless match
 
-        version = SemanticVersion.parse(match[3])
+        version = SemanticVersion.parse(match[:version])
         next if version == current_version
 
         Finding.new(
           path: relative_path(path),
           line: line_number,
-          column: match.begin(3) + 1,
+          column: match.begin(:version) + 1,
           version: version
         )
       end
@@ -193,17 +202,33 @@ module Semverve
       replacement_count = 0
 
       fixed = content.lines.map do |line|
-        match = line.match(RUBY_ASSIGNMENT_PATTERN)
+        match = line.match(pattern)
         next line unless match
 
-        version = SemanticVersion.parse(match[3])
+        version = SemanticVersion.parse(match[:version])
         next line if version == current_version
 
         replacement_count += 1
-        line.sub(RUBY_ASSIGNMENT_PATTERN) { "#{$1}#{$2}#{current_version}#{$4}" }
+        replace_matched_version(line)
       end.join
 
       [fixed, replacement_count]
+    end
+
+    ##
+    # Replaces only the named version capture in the first pattern match.
+    #
+    # @param [String] line
+    #
+    # @return [String]
+    def replace_matched_version(line)
+      line.sub(pattern) do |matched_text|
+        match = Regexp.last_match
+        version_start = match.begin(:version) - match.begin(0)
+        version_end = match.end(:version) - match.begin(0)
+
+        "#{matched_text[0...version_start]}#{current_version}#{matched_text[version_end..]}"
+      end
     end
 
     ##

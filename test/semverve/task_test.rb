@@ -639,6 +639,74 @@ module Semverve
       end
     end
 
+    def test_check_code_accepts_custom_version_literal_pattern
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          release "2.0.0"
+          EXAMPLE = "1.0.0"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+          config.version_code_reference_pattern = /release ["'](?<version>\d+\.\d+\.\d+)["']/
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:code"].invoke }
+
+        assert_match(%r{lib/my_gem/constants\.rb:1:10: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+        assert_no_match(/1\.0\.0/, stdout)
+      end
+    end
+
+    def test_check_code_fix_uses_custom_version_literal_pattern
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        path = write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          release "2.0.0"
+          EXAMPLE = "1.0.0"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+          config.version_code_reference_pattern = /release ["'](?<version>\d+\.\d+\.\d+)["']/
+        end
+
+        stdout = capture_stdout { Rake::Task["semverve:fix:code"].invoke }
+
+        assert_match(%r{Updated lib/my_gem/constants\.rb}, stdout)
+        assert_match(/Replaced 1 code version literal\./, stdout)
+        assert_match(/release "2\.0\.1"/, File.read(path))
+        assert_match(/EXAMPLE = "1\.0\.0"/, File.read(path))
+      end
+    end
+
+    def test_version_code_reference_pattern_rejects_non_regexps
+      in_project do
+        error = assert_raises(Error) do
+          Task.new do |config|
+            config.version_code_reference_pattern = "VERSION ="
+          end
+        end
+
+        assert_equal "version_code_reference_pattern must be a Regexp.", error.message
+      end
+    end
+
+    def test_version_code_reference_pattern_requires_version_capture
+      in_project do
+        error = assert_raises(Error) do
+          Task.new do |config|
+            config.version_code_reference_pattern = /VERSION = ["'](\d+\.\d+\.\d+)["']/
+          end
+        end
+
+        assert_equal "version_code_reference_pattern must include a named capture called version.", error.message
+      end
+    end
+
     def test_check_metadata_reports_literal_gemspec_mismatch
       in_project do
         write_gemspec("my_gem", version: "2.0.0")

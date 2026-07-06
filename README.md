@@ -94,6 +94,8 @@ Semverve.configure do |config|
   config.version_checks = [:doc_references, :code_references, :metadata]
   config.version_reference_mode = :older
   config.version_code_reference_files = Rake::FileList[]
+  config.version_code_reference_pattern =
+    /^\s*(?:(?:[A-Z]\w*::)*(?:[A-Z]\w*VERSION[A-Z0-9_]*|VERSION)|(?:[a-z_]\w*|self)\.version)\s*=\s*(?<quote>["'])(?<version>\d+\.\d+\.\d+)\k<quote>/
   config.version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
     ".git/**/*",
     "coverage/**/*",
@@ -136,6 +138,28 @@ end
 ## Formats
 The default `:module` format stores `MAJOR`, `MINOR`, and `PATCH` constants
 under a `Version` module and exposes a top-level `VERSION` constant.
+
+```ruby
+module MyGem
+  module Version
+    MAJOR = 0
+    MINOR = 1
+    PATCH = 0
+
+    module_function
+
+    def to_a
+      [MAJOR, MINOR, PATCH]
+    end
+
+    def to_s
+      to_a.join(".")
+    end
+  end
+
+  VERSION = Version.to_s
+end
+```
 
 The `:simple` format stores only:
 
@@ -180,7 +204,8 @@ Successful increments print the version change:
 Updating to version 2.0.2 (was 2.0.1)
 ```
 
-Set `config.bundle_lock = true` to run `bundle lock` after increments.
+Set `config.bundle_lock = true` to run `bundle lock` after increments to update
+your gem's version in `Gemfile.lock`.
 
 ## Setting
 Set an exact version without incrementing:
@@ -208,11 +233,10 @@ Warning: updating to version 1.9.9, which is lower than the current version 2.0.
 Updating to version 1.9.9 (was 2.0.1)
 ```
 
-Set `config.bundle_lock = true` to run `bundle lock` after successful version
-changes.
+This will also run `bundle lock` on success if you have `config.bundle_lock =
+true` in your config.
 
 ## Checking version references, code, and metadata
-
 Run every version check with:
 
 ```sh
@@ -358,6 +382,21 @@ spec.version = "1.2.2"
 ```
 
 Arbitrary string examples are ignored.
+
+If your project has a different safe version-literal shape, provide your own
+pattern:
+
+```ruby
+Semverve.configure do |config|
+  config.version_code_reference_files.append("lib/**/*.rb")
+  config.version_code_reference_pattern = /release ["'](?<version>\d+\.\d+\.\d+)["']/
+end
+```
+
+The custom value must be a `Regexp` and must include a named capture called
+`version`. Semverve replaces only that capture when running
+`rake semverve:fix:code`, and the captured value still has to parse as a
+semantic version.
 
 ### Metadata
 Metadata checks are part of `rake semverve:check` by default. They compare the
