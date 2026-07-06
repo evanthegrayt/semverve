@@ -16,7 +16,7 @@ file, incrementing patch/minor/major versions, setting an exact version, and
 checking the places where version numbers tend to drift.
 
 In a nutshell, `rake semverve:increment:patch` updates your configured
-`version.rb` file, and `rake semverve:sync` checks whether the surrounding
+`version.rb` file, and `rake semverve:check` checks whether the surrounding
 project still agrees with that version. It can catch stale README references,
 safe code literals, `.gemspec` drift, and a stale `Gemfile.lock` entry. If you
 want Semverve to do the mechanical cleanup, the matching `*:fix` tasks can
@@ -49,14 +49,14 @@ rake semverve:increment:minor
 rake semverve:increment:major
 rake semverve:generate
 rake semverve:set VERSION=1.2.3
-rake semverve:sync
-rake semverve:sync:fix
-rake semverve:sync:references
-rake semverve:sync:references:fix
-rake semverve:sync:code
-rake semverve:sync:code:fix
-rake semverve:sync:metadata
-rake semverve:sync:metadata:fix
+rake semverve:check
+rake semverve:fix
+rake semverve:check:references
+rake semverve:fix:references
+rake semverve:check:code
+rake semverve:fix:code
+rake semverve:check:metadata
+rake semverve:fix:metadata
 ```
 
 ## Configuration
@@ -214,12 +214,12 @@ Updating to version 1.9.9 (was 2.0.1)
 Set `config.bundle_lock = true` to run `bundle lock` after successful version
 changes.
 
-## Syncing version references, code, and metadata
+## Checking version references, code, and metadata
 
-Run every sync check with:
+Run every version check with:
 
 ```sh
-rake semverve:sync
+rake semverve:check
 ```
 
 This checks:
@@ -240,21 +240,21 @@ Gemfile.lock:4:13: locked version 1.2.2 -> 1.2.3
 Run every available fix:
 
 ```sh
-rake semverve:sync:fix
+rake semverve:fix
 ```
 
 Use focused tasks when you want only one surface:
 
 ```sh
-rake semverve:sync:references
-rake semverve:sync:references:fix
-rake semverve:sync:code
-rake semverve:sync:code:fix
-rake semverve:sync:metadata
-rake semverve:sync:metadata:fix
+rake semverve:check:references
+rake semverve:fix:references
+rake semverve:check:code
+rake semverve:fix:code
+rake semverve:check:metadata
+rake semverve:fix:metadata
 ```
 
-`semverve:sync:metadata:fix` rewrites literal gemspec versions when safe and
+`semverve:fix:metadata` rewrites literal gemspec versions when safe and
 runs `bundle lock` for `Gemfile.lock` drift.
 
 ### Version references
@@ -354,7 +354,7 @@ Arbitrary string examples are ignored.
 
 ### Metadata
 
-Metadata checks are always part of `rake semverve:sync`. They compare the
+Metadata checks are always part of `rake semverve:check`. They compare the
 current version file against:
 
 - the resolved `.gemspec` version
@@ -383,5 +383,5 @@ Gem::Specification.new do |spec|
 end
 ```
 
-`rake semverve:sync:metadata:fix` updates safe literal gemspec assignments and
+`rake semverve:fix:metadata` updates safe literal gemspec assignments and
 runs `bundle lock` when the lockfile has drifted.

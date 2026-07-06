@@ -39,4 +39,4 @@ namespace :standard do
   end
 end
 
-task default: [:test, "semverve:sync"]
+task default: [:test, "semverve:check"]
