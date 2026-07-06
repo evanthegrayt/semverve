@@ -25,6 +25,8 @@ rake semverve:increment:minor
 rake semverve:increment:major
 rake semverve:generate
 rake semverve:set VERSION=1.2.3
+rake semverve:sync
+rake semverve:sync:fix
 ```
 
 ## Configuration
@@ -42,6 +44,8 @@ Semverve.configure do |config|
   config.bundle_lock = true
   config.version_file = "lib/my_gem/version.rb"
   config.module_name = "MyGem"
+  config.version_reference_files.append("doc/**/*.md", "lib/**/*.rb")
+  config.version_reference_mode = :non_current
 end
 ```
 
@@ -134,3 +138,55 @@ Updating to version 1.9.9 (was 2.0.1)
 
 Set `config.bundle_lock = true` to run `bundle lock` after successful version
 changes.
+
+## Syncing version references
+
+Check README files for references to older versions:
+
+```sh
+rake semverve:sync
+```
+
+Findings are printed in a parseable format and the task exits non-zero:
+
+```text
+README.md:12:24: version reference 1.2.2 -> 1.2.3
+```
+
+Replace stale references with the current version:
+
+```sh
+rake semverve:sync:fix
+```
+
+By default, Semverve scans README files throughout the repo. Add docs or Ruby
+comments without replacing the defaults:
+
+```ruby
+Semverve.configure do |config|
+  config.version_reference_files.append("doc/**/*.md", "lib/**/*.rb")
+end
+```
+
+Replace the defaults entirely:
+
+```ruby
+Semverve.configure do |config|
+  config.version_reference_files = Rake::FileList["guides/**/*.md"]
+end
+```
+
+Ruby files are scanned only in comments. Text files with `.md`, `.markdown`,
+`.txt`, `.rdoc`, and `.adoc` extensions are scanned as full text.
+
+The default `:older` mode flags only semantic versions lower than the current
+version. Use `:non_current` to flag any semantic version that does not match:
+
+```ruby
+Semverve.configure do |config|
+  config.version_reference_mode = :non_current
+end
+```
+
+Ignore an intentional reference with `semverve:ignore-version-reference` on the
+same line or the preceding nonblank line.

@@ -37,6 +37,8 @@ module Semverve
         assert_not_nil Rake::Task["semverve:increment:minor"]
         assert_not_nil Rake::Task["semverve:increment:major"]
         assert_not_nil Rake::Task["semverve:generate"]
+        assert_not_nil Rake::Task["semverve:sync"]
+        assert_not_nil Rake::Task["semverve:sync:fix"]
         assert_raise(RuntimeError) { Rake::Task["version:current"] }
       end
     end
@@ -421,6 +423,174 @@ module Semverve
       end
     end
 
+    def test_sync_scans_readme_files_by_default
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Install version 2.0.0.\n")
+        write_file(File.join("guides", "README.md"), "Upgrade from 1.9.9.\n")
+        write_file(File.join("doc", "usage.md"), "Generated docs mention 1.0.0.\n")
+
+        Task.new
+
+        stdout, stderr, error = capture_error(Error) { Rake::Task["semverve:sync"].invoke }
+
+        assert_match(/README\.md:1:17: version reference 2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_match(%r{guides/README\.md:1:14: version reference 1\.9\.9 -> 2\.0\.1}, stdout)
+        assert_no_match(/doc\/usage\.md/, stdout)
+        assert_equal "Found 2 version references out of sync.", error.message
+        assert_empty stderr
+      end
+    end
+
+    def test_sync_can_append_to_default_reference_files
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Install version 2.0.0.\n")
+        write_file(File.join("doc", "usage.md"), "Documented as 1.0.0.\n")
+
+        Task.new do |config|
+          config.version_reference_files.append("doc/**/*.md")
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:sync"].invoke }
+
+        assert_match(/README\.md:1:17: version reference 2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_match(%r{doc/usage\.md:1:15: version reference 1\.0\.0 -> 2\.0\.1}, stdout)
+      end
+    end
+
+    def test_sync_can_replace_default_reference_files
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Install version 2.0.0.\n")
+        write_file(File.join("guides", "usage.md"), "Documented as 1.0.0.\n")
+
+        Task.new do |config|
+          config.version_reference_files = Rake::FileList["guides/**/*.md"]
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:sync"].invoke }
+
+        assert_no_match(/README\.md/, stdout)
+        assert_match(%r{guides/usage\.md:1:15: version reference 1\.0\.0 -> 2\.0\.1}, stdout)
+      end
+    end
+
+    def test_sync_defaults_to_older_version_references
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Old 2.0.0, current 2.0.1, future 2.0.2.\n")
+
+        Task.new
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:sync"].invoke }
+
+        assert_match(/README\.md:1:5: version reference 2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_no_match(/2\.0\.2 -> 2\.0\.1/, stdout)
+      end
+    end
+
+    def test_sync_can_report_non_current_version_references
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Old 2.0.0, current 2.0.1, future 2.0.2.\n")
+
+        Task.new do |config|
+          config.version_reference_mode = :non_current
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:sync"].invoke }
+
+        assert_match(/README\.md:1:5: version reference 2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_match(/README\.md:1:34: version reference 2\.0\.2 -> 2\.0\.1/, stdout)
+        assert_no_match(/current 2\.0\.1 -> 2\.0\.1/, stdout)
+      end
+    end
+
+    def test_sync_scans_ruby_comments_without_scanning_code_literals
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file(File.join("lib", "my_gem", "example.rb"), <<~RUBY)
+          EXAMPLE_VERSION = "1.0.0"
+          # See version 1.0.0.
+        RUBY
+
+        Task.new do |config|
+          config.version_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:sync"].invoke }
+
+        assert_no_match(/1:20/, stdout)
+        assert_match(%r{lib/my_gem/example\.rb:2:15: version reference 1\.0\.0 -> 2\.0\.1}, stdout)
+      end
+    end
+
+    def test_sync_fix_replaces_version_references
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        readme_path = write_file("README.md", "Install version 2.0.0.\n")
+        example_path = write_file(File.join("lib", "my_gem", "example.rb"), <<~RUBY)
+          EXAMPLE_VERSION = "1.0.0"
+          # See version 1.0.0.
+        RUBY
+
+        Task.new do |config|
+          config.version_reference_files.append("lib/**/*.rb")
+        end
+
+        stdout = capture_stdout { Rake::Task["semverve:sync:fix"].invoke }
+
+        assert_match(/Updated README\.md/, stdout)
+        assert_match(%r{Updated lib/my_gem/example\.rb}, stdout)
+        assert_match(/Replaced 2 version references\./, stdout)
+        assert_equal "Install version 2.0.1.\n", File.read(readme_path)
+        assert_match(/EXAMPLE_VERSION = "1\.0\.0"/, File.read(example_path))
+        assert_match(/# See version 2\.0\.1\./, File.read(example_path))
+      end
+    end
+
+    def test_sync_honors_inline_ignore_markers
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", <<~MARKDOWN)
+          Same line 1.0.0. <!-- semverve:ignore-version-reference -->
+          <!-- semverve:ignore-version-reference -->
+
+          Previous marker ignores 1.5.0.
+          Report this 1.9.9.
+        MARKDOWN
+
+        Task.new
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:sync"].invoke }
+
+        assert_no_match(/1\.0\.0/, stdout)
+        assert_no_match(/1\.5\.0/, stdout)
+        assert_match(/README\.md:5:13: version reference 1\.9\.9 -> 2\.0\.1/, stdout)
+      end
+    end
+
+    def test_sync_reports_clean_reference_files
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Install version 2.0.1.\n")
+
+        Task.new
+
+        assert_equal "Version references are in sync.\n", capture_stdout { Rake::Task["semverve:sync"].invoke }
+      end
+    end
+
     private
 
     def in_project
@@ -478,6 +648,20 @@ module Semverve
       $stderr = errors
       yield
       [output.string, errors.string]
+    ensure
+      $stdout = original_stdout
+      $stderr = original_stderr
+    end
+
+    def capture_error(error_class)
+      original_stdout = $stdout
+      original_stderr = $stderr
+      output = StringIO.new
+      errors = StringIO.new
+      $stdout = output
+      $stderr = errors
+      error = assert_raise(error_class) { yield }
+      [output.string, errors.string, error]
     ensure
       $stdout = original_stdout
       $stderr = original_stderr
