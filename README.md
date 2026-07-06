@@ -1,4 +1,8 @@
 # Semverve
+[![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fevanthegrayt%2Fsemverve%2Fbadge%3Fref%3Dmaster&style=flat)](https://actions-badge.atrox.dev/evanthegrayt/semverve/goto?ref=master)
+[![Language: Ruby](https://img.shields.io/static/v1?label=language&message=Ruby&color=CC342D&style=flat&logo=ruby&logoColor=CC342D)](https://www.ruby-lang.org/)
+[![Gem Version](https://img.shields.io/gem/v/semverve.svg)](https://rubygems.org/gems/semverve)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 Rake tasks for handling the tedium surrounding maintaining a version number in
 your Ruby project, with gusto!
 
