@@ -449,7 +449,7 @@ module Semverve
       end
     end
 
-    def test_sync_can_append_to_default_reference_files
+    def test_sync_can_append_to_default_doc_reference_files
       in_project do
         write_gemspec("my_gem")
         write_module_version("MyGem", "2.0.1")
@@ -457,7 +457,7 @@ module Semverve
         write_file(File.join("doc", "usage.md"), "Documented as 1.0.0.\n")
 
         Task.new do |config|
-          config.version_reference_files.append("doc/**/*.md")
+          config.version_doc_reference_files.append("doc/**/*.md")
         end
 
         stdout, = capture_error(Error) { Rake::Task["semverve:sync:references"].invoke }
@@ -467,7 +467,7 @@ module Semverve
       end
     end
 
-    def test_sync_can_replace_default_reference_files
+    def test_sync_can_replace_default_doc_reference_files
       in_project do
         write_gemspec("my_gem")
         write_module_version("MyGem", "2.0.1")
@@ -475,7 +475,7 @@ module Semverve
         write_file(File.join("guides", "usage.md"), "Documented as 1.0.0.\n")
 
         Task.new do |config|
-          config.version_reference_files = Rake::FileList["guides/**/*.md"]
+          config.version_doc_reference_files = Rake::FileList["guides/**/*.md"]
         end
 
         stdout, = capture_error(Error) { Rake::Task["semverve:sync:references"].invoke }
@@ -528,7 +528,7 @@ module Semverve
         RUBY
 
         Task.new do |config|
-          config.version_reference_files = Rake::FileList["lib/**/*.rb"]
+          config.version_doc_reference_files = Rake::FileList["lib/**/*.rb"]
         end
 
         stdout, = capture_error(Error) { Rake::Task["semverve:sync:references"].invoke }
@@ -549,7 +549,7 @@ module Semverve
         RUBY
 
         Task.new do |config|
-          config.version_reference_files.append("lib/**/*.rb")
+          config.version_doc_reference_files.append("lib/**/*.rb")
         end
 
         stdout = capture_stdout { Rake::Task["semverve:sync:references:fix"].invoke }
@@ -585,7 +585,7 @@ module Semverve
       end
     end
 
-    def test_sync_reports_clean_reference_files
+    def test_sync_reports_clean_doc_reference_files
       in_project do
         write_gemspec("my_gem")
         write_module_version("MyGem", "2.0.1")

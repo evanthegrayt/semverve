@@ -2,6 +2,30 @@
 
 Rake tasks for reading, generating, and incrementing Ruby gem version files.
 
+## About
+
+Maintaining a gem version is not hard, but it is easy to forget. I have had
+plenty of changes where the code was ready, the tests were green, the PR was
+merged, and then I noticed that the version file, lockfile, or docs still said
+the old thing. Then comes the tiny follow-up PR that exists only because I did
+not remember to bump a number before merging.
+
+Semverve is meant to make that tedium boring in the best way. It gives a gem a
+small set of Rake tasks for reading the current version, generating a version
+file, incrementing patch/minor/major versions, setting an exact version, and
+checking the places where version numbers tend to drift.
+
+In a nutshell, `rake semverve:increment:patch` updates your configured
+`version.rb` file, and `rake semverve:sync` checks whether the surrounding
+project still agrees with that version. It can catch stale README references,
+safe code literals, `.gemspec` drift, and a stale `Gemfile.lock` entry. If you
+want Semverve to do the mechanical cleanup, the matching `*:fix` tasks can
+update safe references and run `bundle lock` for generated lockfile drift.
+
+The goal is not to replace your release process. It is to take care of the
+small, forgettable version-maintenance chores around that process, so you do
+not have to remember them at the worst possible moment.
+
 ## Installation
 
 Add the gem to your Gemfile:
@@ -40,7 +64,15 @@ rake semverve:sync:metadata:fix
 By default, Semverve reads the single `.gemspec` in the project root, uses
 `spec.name` as the gem name, and manages `lib/<gem_name>/version.rb`.
 
-Override anything unusual in your Rakefile:
+For a conventional gem, this may be all you need:
+
+```ruby
+require "semverve/task"
+```
+
+That automatically installs the `semverve:*` Rake tasks. If you want to make
+the setup explicit, or if you want to change any defaults, configure Semverve
+from your Rakefile:
 
 ```ruby
 require "semverve/task"
@@ -51,8 +83,44 @@ Semverve.configure do |config|
   config.version_file = "lib/my_gem/version.rb"
   config.module_name = "MyGem"
   config.version_code_reference_files.append("lib/**/*.rb")
-  config.version_reference_files.append("doc/**/*.md")
+  config.version_doc_reference_files.append("doc/**/*.md")
   config.version_reference_mode = :non_current
+end
+```
+
+The core defaults are equivalent to:
+
+```ruby
+Semverve.configure do |config|
+  config.format = :module
+  config.bundle_lock = false
+  config.root = Dir.pwd
+  config.version_reference_mode = :older
+  config.version_code_reference_files = Rake::FileList[]
+  config.version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
+    ".git/**/*",
+    "coverage/**/*",
+    "tmp/**/*",
+    "vendor/**/*"
+  )
+end
+```
+
+The gem name, module name, and version-file path are inferred by default:
+
+```ruby
+config.gem_name     # spec.name from the single .gemspec
+config.module_name  # camelized gem name, such as "MyGem"
+config.version_file # lib/<gem_name>/version.rb
+```
+
+Override them when your project does something unusual:
+
+```ruby
+Semverve.configure do |config|
+  config.gem_name = "my-gem"
+  config.module_name = "MyGem"
+  config.version_file = "lib/my_gem/version.rb"
 end
 ```
 
@@ -148,7 +216,7 @@ changes.
 
 ## Syncing version references, code, and metadata
 
-Run every sync check:
+Run every sync check with:
 
 ```sh
 rake semverve:sync
@@ -191,12 +259,26 @@ runs `bundle lock` for `Gemfile.lock` drift.
 
 ### Version references
 
-By default, Semverve scans README files throughout the repo. Add docs or Ruby
-comments without replacing the defaults:
+Version references are prose-like references to versions. These are usually in
+README files, docs, guides, or comments. By default, Semverve scans README files
+throughout the repo:
 
 ```ruby
 Semverve.configure do |config|
-  config.version_reference_files.append("doc/**/*.md", "lib/**/*.rb")
+  config.version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
+    ".git/**/*",
+    "coverage/**/*",
+    "tmp/**/*",
+    "vendor/**/*"
+  )
+end
+```
+
+Add docs or Ruby comments without replacing the README defaults:
+
+```ruby
+Semverve.configure do |config|
+  config.version_doc_reference_files.append("doc/**/*.md", "lib/**/*.rb")
 end
 ```
 
@@ -204,15 +286,23 @@ Replace the defaults entirely:
 
 ```ruby
 Semverve.configure do |config|
-  config.version_reference_files = Rake::FileList["guides/**/*.md"]
+  config.version_doc_reference_files = Rake::FileList["guides/**/*.md"]
 end
 ```
 
 Ruby files are scanned only in comments. Text files with `.md`, `.markdown`,
 `.txt`, `.rdoc`, and `.adoc` extensions are scanned as full text.
 
-The default `:older` mode flags only semantic versions lower than the current
-version. Use `:non_current` to flag any semantic version that does not match:
+The default reference mode is `:older`, which flags only semantic versions lower
+than the current version:
+
+```ruby
+Semverve.configure do |config|
+  config.version_reference_mode = :older
+end
+```
+
+Use `:non_current` when every reference should match the current version:
 
 ```ruby
 Semverve.configure do |config|
@@ -223,13 +313,33 @@ end
 Ignore an intentional reference with `semverve:ignore-version-reference` on the
 same line or the preceding nonblank line.
 
+```markdown
+This migration note intentionally mentions 1.0.0. <!-- semverve:ignore-version-reference -->
+```
+
 ### Code version literals
 
-Code scanning is opt-in to avoid false positives:
+Code scanning is opt-in to avoid false positives. The default is:
+
+```ruby
+Semverve.configure do |config|
+  config.version_code_reference_files = Rake::FileList[]
+end
+```
+
+Append files when you want Semverve to check safe code literals:
 
 ```ruby
 Semverve.configure do |config|
   config.version_code_reference_files.append("lib/**/*.rb")
+end
+```
+
+Or replace the list entirely:
+
+```ruby
+Semverve.configure do |config|
+  config.version_code_reference_files = Rake::FileList["lib/**/*.rb", "*.gemspec"]
 end
 ```
 
@@ -241,3 +351,37 @@ spec.version = "1.2.2"
 ```
 
 Arbitrary string examples are ignored.
+
+### Metadata
+
+Metadata checks are always part of `rake semverve:sync`. They compare the
+current version file against:
+
+- the resolved `.gemspec` version
+- the matching `Gemfile.lock` entry, when a lockfile exists
+
+Metadata always requires an exact match, regardless of
+`config.version_reference_mode`.
+
+Dynamic gemspec versions work as expected:
+
+```ruby
+require_relative "lib/my_gem/version"
+
+Gem::Specification.new do |spec|
+  spec.name = "my_gem"
+  spec.version = MyGem::VERSION
+end
+```
+
+Literal gemspec versions can be fixed automatically:
+
+```ruby
+Gem::Specification.new do |spec|
+  spec.name = "my_gem"
+  spec.version = "1.2.2"
+end
+```
+
+`rake semverve:sync:metadata:fix` updates safe literal gemspec assignments and
+runs `bundle lock` when the lockfile has drifted.

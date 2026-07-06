@@ -57,10 +57,10 @@ module Semverve
     attr_accessor :version_code_reference_files
 
     ##
-    # Files to scan for version references.
+    # Documentation files to scan for version references.
     #
     # @return [Rake::FileList]
-    attr_accessor :version_reference_files
+    attr_accessor :version_doc_reference_files
 
     ##
     # Version-reference comparison mode.
@@ -77,7 +77,7 @@ module Semverve
       @command_runner = ->(command) { system(command) }
       @format = :module
       @version_code_reference_files = Rake::FileList[]
-      @version_reference_files = Rake::FileList["README*", "**/README*"].exclude(
+      @version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
         ".git/**/*",
         "coverage/**/*",
         "tmp/**/*",
@@ -102,7 +102,7 @@ module Semverve
         root: expanded_root,
         version_file: metadata.version_file,
         version_code_reference_files: version_code_reference_files,
-        version_reference_files: version_reference_files,
+        version_doc_reference_files: version_doc_reference_files,
         version_reference_mode: normalized_version_reference_mode
       )
     end
@@ -184,10 +184,10 @@ module Semverve
     attr_reader :version_code_reference_files
 
     ##
-    # Resolved files to scan for version references.
+    # Resolved documentation files to scan for version references.
     #
     # @return [Rake::FileList]
-    attr_reader :version_reference_files
+    attr_reader :version_doc_reference_files
 
     ##
     # Resolved version-reference comparison mode.
@@ -206,11 +206,11 @@ module Semverve
     # @param [String] root
     # @param [String] version_file
     # @param [Rake::FileList] version_code_reference_files
-    # @param [Rake::FileList] version_reference_files
+    # @param [Rake::FileList] version_doc_reference_files
     # @param [Symbol] version_reference_mode
     #
     # @return [Semverve::ResolvedConfiguration]
-    def initialize(bundle_lock:, command_runner:, format:, gem_name:, module_name:, root:, version_file:, version_code_reference_files:, version_reference_files:, version_reference_mode:)
+    def initialize(bundle_lock:, command_runner:, format:, gem_name:, module_name:, root:, version_file:, version_code_reference_files:, version_doc_reference_files:, version_reference_mode:)
       @bundle_lock = bundle_lock
       @command_runner = command_runner
       @format = format
@@ -219,7 +219,7 @@ module Semverve
       @root = root
       @version_file = version_file
       @version_code_reference_files = version_code_reference_files
-      @version_reference_files = version_reference_files
+      @version_doc_reference_files = version_doc_reference_files
       @version_reference_mode = version_reference_mode
     end
 
