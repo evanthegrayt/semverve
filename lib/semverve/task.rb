@@ -108,50 +108,46 @@ module Semverve
         end
 
         desc "Check version references, code literals, and metadata"
-        task :sync do
-          sync
+        task :check do
+          check
         end
 
-        namespace :sync do
-          desc "Fix version references, code literals, and metadata"
-          task :fix do
-            fix_sync
-          end
-
+        namespace :check do
           desc "Check configured files for stale version references"
           task :references do
-            sync_references
-          end
-
-          namespace :references do
-            desc "Replace stale version references in configured files"
-            task :fix do
-              fix_references
-            end
+            check_references
           end
 
           desc "Check configured code files for version literals"
           task :code do
-            sync_code
-          end
-
-          namespace :code do
-            desc "Replace safe code version literals in configured files"
-            task :fix do
-              fix_code
-            end
+            check_code
           end
 
           desc "Check gem metadata for version mismatches"
           task :metadata do
-            sync_metadata
+            check_metadata
+          end
+        end
+
+        desc "Fix version references, code literals, and metadata"
+        task :fix do
+          fix
+        end
+
+        namespace :fix do
+          desc "Replace stale version references in configured files"
+          task :references do
+            fix_references
           end
 
-          namespace :metadata do
-            desc "Fix safe gem metadata version mismatches"
-            task :fix do
-              fix_metadata
-            end
+          desc "Replace safe code version literals in configured files"
+          task :code do
+            fix_code
+          end
+
+          desc "Fix safe gem metadata version mismatches"
+          task :metadata do
+            fix_metadata
           end
         end
       end
@@ -187,47 +183,37 @@ module Semverve
     end
 
     ##
-    # Checks all sync surfaces.
+    # Checks all version-maintenance surfaces.
     #
     # @return [void]
-    def sync
-      configuration, current_version = sync_context
+    def check
+      configuration, current_version = check_context
       report_findings(
-        [
-          ["version reference", VersionReferences.new(configuration, current_version).findings],
-          ["code version literal", VersionCodeReferences.new(configuration, current_version).findings],
-          [nil, VersionMetadata.new(configuration, current_version).findings]
-        ],
+        check_groups(configuration, current_version),
         current_version,
-        clean_message: "Version sync checks passed."
+        clean_message: "Version checks passed."
       )
     end
 
     ##
-    # Fixes all sync surfaces.
+    # Fixes all check surfaces.
     #
     # @return [void]
-    def fix_sync
-      configuration, current_version = sync_context
-      results = [
-        ["version reference", VersionReferences.new(configuration, current_version).fix],
-        ["code version literal", VersionCodeReferences.new(configuration, current_version).fix],
-        ["metadata version", VersionMetadata.new(configuration, current_version).fix]
-      ]
-
-      report_fix_results(results)
+    def fix
+      configuration, current_version = check_context
+      report_fix_results(fix_results(configuration, current_version))
     end
 
     ##
     # Checks configured files for stale version references.
     #
     # @return [void]
-    def sync_references
-      configuration, current_version = sync_context
+    def check_references
+      configuration, current_version = check_context
       report_findings(
         [["version reference", VersionReferences.new(configuration, current_version).findings]],
         current_version,
-        clean_message: "Version references are in sync."
+        clean_message: "Version references are current."
       )
     end
 
@@ -236,10 +222,10 @@ module Semverve
     #
     # @return [void]
     def fix_references
-      configuration, current_version = sync_context
+      configuration, current_version = check_context
       report_fix_results(
         [["version reference", VersionReferences.new(configuration, current_version).fix]],
-        clean_message: "Version references are in sync."
+        clean_message: "Version references are current."
       )
     end
 
@@ -247,12 +233,12 @@ module Semverve
     # Checks configured code files for version literals.
     #
     # @return [void]
-    def sync_code
-      configuration, current_version = sync_context
+    def check_code
+      configuration, current_version = check_context
       report_findings(
         [["code version literal", VersionCodeReferences.new(configuration, current_version).findings]],
         current_version,
-        clean_message: "Code version literals are in sync."
+        clean_message: "Code version literals are current."
       )
     end
 
@@ -261,10 +247,10 @@ module Semverve
     #
     # @return [void]
     def fix_code
-      configuration, current_version = sync_context
+      configuration, current_version = check_context
       report_fix_results(
         [["code version literal", VersionCodeReferences.new(configuration, current_version).fix]],
-        clean_message: "Code version literals are in sync."
+        clean_message: "Code version literals are current."
       )
     end
 
@@ -272,12 +258,12 @@ module Semverve
     # Checks gem metadata for version mismatches.
     #
     # @return [void]
-    def sync_metadata
-      configuration, current_version = sync_context
+    def check_metadata
+      configuration, current_version = check_context
       report_findings(
         [[nil, VersionMetadata.new(configuration, current_version).findings]],
         current_version,
-        clean_message: "Version metadata is in sync."
+        clean_message: "Version metadata is current."
       )
     end
 
@@ -286,20 +272,62 @@ module Semverve
     #
     # @return [void]
     def fix_metadata
-      configuration, current_version = sync_context
+      configuration, current_version = check_context
       report_fix_results(
         [["metadata version", VersionMetadata.new(configuration, current_version).fix]],
-        clean_message: "Version metadata is in sync."
+        clean_message: "Version metadata is current."
       )
     end
 
     ##
-    # Resolved configuration and current version for sync tasks.
+    # Resolved configuration and current version for check tasks.
     #
     # @return [Array(Semverve::ResolvedConfiguration, Semverve::SemanticVersion)]
-    def sync_context
+    def check_context
       configuration = Semverve.configuration.resolved
       [configuration, VersionFile.new(configuration).current]
+    end
+
+    ##
+    # Finding groups enabled for the umbrella check task.
+    #
+    # @param [Semverve::ResolvedConfiguration] configuration
+    # @param [Semverve::SemanticVersion] current_version
+    #
+    # @return [Array<Array(String, Array)>]
+    def check_groups(configuration, current_version)
+      groups = []
+      if configuration.version_checks.include?(:doc_references)
+        groups << ["version reference", VersionReferences.new(configuration, current_version).findings]
+      end
+      if configuration.version_checks.include?(:code_references)
+        groups << ["code version literal", VersionCodeReferences.new(configuration, current_version).findings]
+      end
+      if configuration.version_checks.include?(:metadata)
+        groups << [nil, VersionMetadata.new(configuration, current_version).findings]
+      end
+      groups
+    end
+
+    ##
+    # Fix results enabled for the umbrella fix task.
+    #
+    # @param [Semverve::ResolvedConfiguration] configuration
+    # @param [Semverve::SemanticVersion] current_version
+    #
+    # @return [Array<Array(String, #replacement_count, #changed_files)>]
+    def fix_results(configuration, current_version)
+      results = []
+      if configuration.version_checks.include?(:doc_references)
+        results << ["version reference", VersionReferences.new(configuration, current_version).fix]
+      end
+      if configuration.version_checks.include?(:code_references)
+        results << ["code version literal", VersionCodeReferences.new(configuration, current_version).fix]
+      end
+      if configuration.version_checks.include?(:metadata)
+        results << ["metadata version", VersionMetadata.new(configuration, current_version).fix]
+      end
+      results
     end
 
     ##
@@ -325,7 +353,7 @@ module Semverve
       end
 
       issue = findings.one? ? "issue" : "issues"
-      raise Error, "Found #{findings.count} version sync #{issue}."
+      raise Error, "Found #{findings.count} version check #{issue}."
     end
 
     ##
@@ -335,7 +363,7 @@ module Semverve
     # @param [String] clean_message
     #
     # @return [void]
-    def report_fix_results(results, clean_message: "Version sync checks passed.")
+    def report_fix_results(results, clean_message: "Version checks passed.")
       replacement_count = results.sum { |(_label, result)| result.replacement_count }
       bundle_lock_ran = results.any? { |(_label, result)| result.respond_to?(:bundle_lock_ran) && result.bundle_lock_ran }
 

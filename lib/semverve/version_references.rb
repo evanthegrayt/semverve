@@ -169,7 +169,7 @@ module Semverve
     #
     # @return [Array<String>]
     def files
-      @files ||= FileListResolver.new(root: root, file_list: configuration.version_reference_files).files
+      @files ||= FileListResolver.new(root: root, file_list: configuration.version_doc_reference_files).files
         .reject { |path| ignored_path?(path) }
     end
 

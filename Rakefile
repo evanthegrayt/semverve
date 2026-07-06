@@ -20,6 +20,7 @@ end
 
 Semverve::Task.new do |t|
   t.bundle_lock = true
+  t.version_code_reference_files.append("lib/**/*.rb", "semverve.gemspec", "Rakefile")
 end
 
 standardrb = ->(*args) do
@@ -38,4 +39,4 @@ namespace :standard do
   end
 end
 
-task default: :test
+task default: [:test, "semverve:check"]

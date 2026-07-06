@@ -2,12 +2,15 @@
 
 require "rake"
 
+require_relative "error"
 require_relative "project_metadata"
 
 module Semverve
   ##
   # Mutable configuration used before Semverve resolves project defaults.
   class Configuration
+    VALID_VERSION_CHECKS = [:doc_references, :code_references, :metadata].freeze
+
     ##
     # Whether increments should run +bundle lock+ after writing a version.
     #
@@ -57,10 +60,16 @@ module Semverve
     attr_accessor :version_code_reference_files
 
     ##
-    # Files to scan for version references.
+    # Documentation files to scan for version references.
     #
     # @return [Rake::FileList]
-    attr_accessor :version_reference_files
+    attr_accessor :version_doc_reference_files
+
+    ##
+    # Version-maintenance surfaces run by the umbrella check and fix tasks.
+    #
+    # @return [Array<Symbol, String>]
+    attr_reader :version_checks
 
     ##
     # Version-reference comparison mode.
@@ -77,13 +86,14 @@ module Semverve
       @command_runner = ->(command) { system(command) }
       @format = :module
       @version_code_reference_files = Rake::FileList[]
-      @version_reference_files = Rake::FileList["README*", "**/README*"].exclude(
+      @version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
         ".git/**/*",
         "coverage/**/*",
         "tmp/**/*",
         "vendor/**/*"
       )
       @version_reference_mode = :older
+      self.version_checks = VALID_VERSION_CHECKS
     end
 
     ##
@@ -101,10 +111,21 @@ module Semverve
         module_name: metadata.module_name,
         root: expanded_root,
         version_file: metadata.version_file,
+        version_checks: normalized_version_checks,
         version_code_reference_files: version_code_reference_files,
-        version_reference_files: version_reference_files,
+        version_doc_reference_files: version_doc_reference_files,
         version_reference_mode: normalized_version_reference_mode
       )
+    end
+
+    ##
+    # Sets the version-maintenance surfaces run by umbrella tasks.
+    #
+    # @param [Array<Symbol, String>] checks
+    #
+    # @return [Array<Symbol>]
+    def version_checks=(checks)
+      @version_checks = normalize_version_checks(checks)
     end
 
     ##
@@ -124,11 +145,37 @@ module Semverve
     end
 
     ##
+    # Configured version checks normalized for lookup.
+    #
+    # @return [Array<Symbol>]
+    def normalized_version_checks
+      normalize_version_checks(version_checks)
+    end
+
+    ##
     # Configured version-reference mode normalized for lookup.
     #
     # @return [Symbol]
     def normalized_version_reference_mode
       version_reference_mode.to_sym
+    end
+
+    ##
+    # Normalizes and validates umbrella version checks.
+    #
+    # @param [Array<Symbol, String>] checks
+    #
+    # @return [Array<Symbol>]
+    def normalize_version_checks(checks)
+      normalized_checks = Array(checks).map do |check|
+        check.respond_to?(:to_sym) ? check.to_sym : check
+      end
+      return normalized_checks if normalized_checks.all? { |check| VALID_VERSION_CHECKS.include?(check) }
+
+      invalid_checks = normalized_checks.reject { |check| VALID_VERSION_CHECKS.include?(check) }
+      valid_check_names = VALID_VERSION_CHECKS.map(&:inspect)
+      valid_checks = "#{valid_check_names[0...-1].join(", ")}, or #{valid_check_names.last}"
+      raise Error, "Unknown version check #{invalid_checks.map(&:inspect).join(", ")}. Use #{valid_checks}."
     end
   end
 
@@ -178,16 +225,22 @@ module Semverve
     attr_reader :version_file
 
     ##
+    # Resolved version-maintenance surfaces run by umbrella tasks.
+    #
+    # @return [Array<Symbol>]
+    attr_reader :version_checks
+
+    ##
     # Resolved code files to scan for safe version literals.
     #
     # @return [Rake::FileList]
     attr_reader :version_code_reference_files
 
     ##
-    # Resolved files to scan for version references.
+    # Resolved documentation files to scan for version references.
     #
     # @return [Rake::FileList]
-    attr_reader :version_reference_files
+    attr_reader :version_doc_reference_files
 
     ##
     # Resolved version-reference comparison mode.
@@ -205,12 +258,25 @@ module Semverve
     # @param [String] module_name
     # @param [String] root
     # @param [String] version_file
+    # @param [Array<Symbol>] version_checks
     # @param [Rake::FileList] version_code_reference_files
-    # @param [Rake::FileList] version_reference_files
+    # @param [Rake::FileList] version_doc_reference_files
     # @param [Symbol] version_reference_mode
     #
     # @return [Semverve::ResolvedConfiguration]
-    def initialize(bundle_lock:, command_runner:, format:, gem_name:, module_name:, root:, version_file:, version_code_reference_files:, version_reference_files:, version_reference_mode:)
+    def initialize(
+      bundle_lock:,
+      command_runner:,
+      format:,
+      gem_name:,
+      module_name:,
+      root:,
+      version_file:,
+      version_checks:,
+      version_code_reference_files:,
+      version_doc_reference_files:,
+      version_reference_mode:
+    )
       @bundle_lock = bundle_lock
       @command_runner = command_runner
       @format = format
@@ -218,8 +284,9 @@ module Semverve
       @module_name = module_name
       @root = root
       @version_file = version_file
+      @version_checks = version_checks
       @version_code_reference_files = version_code_reference_files
-      @version_reference_files = version_reference_files
+      @version_doc_reference_files = version_doc_reference_files
       @version_reference_mode = version_reference_mode
     end
 
