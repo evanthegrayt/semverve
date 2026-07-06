@@ -26,6 +26,9 @@ tasks can update safe references and run `bundle lock` for generated lockfile
 drift. Specific findings can be skipped with magic comments, similar to RuboCop
 and RDoc.
 
+You can view the documentation
+[here](https://evanthegrayt.github.io/semverve/).
+
 ## Installation
 Add the gem to your Gemfile:
 
