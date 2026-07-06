@@ -26,3 +26,5 @@ module Semverve
     end
   end
 end
+
+require_relative "semverve/railtie" if defined?(::Rails::Railtie)

@@ -313,6 +313,95 @@ module Semverve
       end
     end
 
+    def test_rails_preset_resolves_rails_defaults
+      in_project do
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          Semverve.configure do |config|
+            config.preset = :rails
+          end
+
+          resolved = Semverve.configuration.resolved
+
+          assert_equal :simple, resolved.format
+          assert_equal "Storefront", resolved.module_name
+          assert_equal File.expand_path(@tmpdir), resolved.root
+          assert_equal File.join("config", "version.rb"), resolved.version_file
+        end
+      end
+    end
+
+    def test_rails_preset_falls_back_to_project_directory_for_module_name
+      root = File.join(@tmpdir, "my-rails-app")
+
+      with_stubbed_rails(root: root, application: Class.new.new) do
+        Semverve.configure do |config|
+          config.preset = :rails
+        end
+
+        assert_equal "MyRailsApp", Semverve.configuration.resolved.module_name
+      end
+    end
+
+    def test_rails_preset_respects_explicit_overrides
+      in_project do
+        custom_root = File.join(@tmpdir, "custom-root")
+
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          Semverve.configure do |config|
+            config.preset = :rails
+            config.format = :module
+            config.module_name = "CustomApp"
+            config.root = custom_root
+            config.version_file = File.join("config", "releases", "version.rb")
+          end
+
+          resolved = Semverve.configuration.resolved
+
+          assert_equal :module, resolved.format
+          assert_equal "CustomApp", resolved.module_name
+          assert_equal File.expand_path(custom_root), resolved.root
+          assert_equal File.join("config", "releases", "version.rb"), resolved.version_file
+        end
+      end
+    end
+
+    def test_unknown_preset_fails_loudly
+      error = assert_raises(Error) do
+        Semverve.configure do |config|
+          config.preset = :sinatra
+        end
+      end
+
+      assert_equal "Unknown preset :sinatra. Use :rails.", error.message
+    end
+
+    def test_current_reads_rails_preset_without_gemspec
+      in_project do
+        write_simple_version("Storefront", "2.0.1", path: File.join("config", "version.rb"))
+
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          Task.new do |config|
+            config.preset = :rails
+          end
+
+          assert_equal "2.0.1\n", capture_stdout { Rake::Task["semverve:current"].invoke }
+        end
+      end
+    end
+
+    def test_railtie_sets_rails_preset_and_installs_tasks
+      in_project do
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          require_relative "../../lib/semverve/railtie"
+
+          Semverve::Railtie.rake_tasks_blocks.each(&:call)
+
+          assert_equal :rails, Semverve.configuration.preset
+          assert_not_nil Rake::Task["semverve:current"]
+        end
+      end
+    end
+
     def test_generate_defaults_to_module_format
       in_project do
         write_gemspec("my_gem")
@@ -933,6 +1022,40 @@ module Semverve
       path ||= File.join("lib", underscore(module_name), "version.rb")
       write_file(path, Formats::SimpleString.new.generate(SemanticVersion.parse(version), module_name: module_name))
       File.join(@tmpdir, path)
+    end
+
+    def rails_application(module_name)
+      Class.new do
+        define_singleton_method(:module_parent_name) { module_name }
+      end.new
+    end
+
+    def with_stubbed_rails(root:, application:)
+      original_rails = Object.const_get(:Rails) if Object.const_defined?(:Rails)
+      Object.send(:remove_const, :Rails) if Object.const_defined?(:Rails)
+
+      railtie = Class.new do
+        class << self
+          def rake_tasks(&block)
+            rake_tasks_blocks << block
+          end
+
+          def rake_tasks_blocks
+            @rake_tasks_blocks ||= []
+          end
+        end
+      end
+
+      rails = Module.new
+      rails.const_set(:Railtie, railtie)
+      rails.define_singleton_method(:root) { root }
+      rails.define_singleton_method(:application) { application }
+      Object.const_set(:Rails, rails)
+
+      yield rails
+    ensure
+      Object.send(:remove_const, :Rails) if Object.const_defined?(:Rails)
+      Object.const_set(:Rails, original_rails) if defined?(original_rails)
     end
 
     def write_file(path, content)
