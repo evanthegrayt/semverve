@@ -24,6 +24,7 @@ rake semverve:increment:patch
 rake semverve:increment:minor
 rake semverve:increment:major
 rake semverve:generate
+rake semverve:set VERSION=1.2.3
 ```
 
 ## Configuration
@@ -96,4 +97,40 @@ rake semverve:increment:major
 Patch increments only patch. Minor increments minor and resets patch to `0`.
 Major increments major and resets minor and patch to `0`.
 
+Successful increments print the version change:
+
+```text
+Updating to version 2.0.2 (was 2.0.1)
+```
+
 Set `config.bundle_lock = true` to run `bundle lock` after increments.
+
+## Setting
+
+Set an exact version without incrementing:
+
+```sh
+rake semverve:set VERSION=1.2.3
+```
+
+Successful updates print the version change:
+
+```text
+Updating to version 1.2.3 (was 1.2.2)
+```
+
+Setting the current version again does not rewrite the version file:
+
+```text
+Version is already 1.2.3
+```
+
+Setting a lower version prints a warning but still updates the file:
+
+```text
+Warning: updating to version 1.9.9, which is lower than the current version 2.0.1.
+Updating to version 1.9.9 (was 2.0.1)
+```
+
+Set `config.bundle_lock = true` to run `bundle lock` after successful version
+changes.

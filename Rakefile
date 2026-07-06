@@ -4,7 +4,6 @@ require_relative "lib/semverve/task"
 require "bundler/gem_tasks"
 require "rdoc/task"
 require "rake/testtask"
-require "tmpdir"
 
 Rake::TestTask.new do |t|
   t.libs = ["lib"]
@@ -23,10 +22,20 @@ Semverve::Task.new do |t|
   t.bundle_lock = true
 end
 
+standardrb = ->(*args) do
+  sh(["bundle", "exec", "standardrb", *args].join(" "))
+end
+
 desc "Run Standard Ruby"
 task :standard do
-  ENV["RUBOCOP_CACHE_ROOT"] ||= File.join(File.realpath(Dir.tmpdir), "rubocop_cache")
-  sh "bundle exec standardrb"
+  standardrb.call
+end
+
+namespace :standard do
+  desc "Fix Standard Ruby offenses"
+  task :fix do
+    standardrb.call("--fix")
+  end
 end
 
 task default: :test

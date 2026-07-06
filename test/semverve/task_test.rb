@@ -32,6 +32,7 @@ module Semverve
         Task.new
 
         assert_not_nil Rake::Task["semverve:current"]
+        assert_not_nil Rake::Task["semverve:set"]
         assert_not_nil Rake::Task["semverve:increment:patch"]
         assert_not_nil Rake::Task["semverve:increment:minor"]
         assert_not_nil Rake::Task["semverve:increment:major"]
@@ -69,7 +70,7 @@ module Semverve
 
         Task.new
 
-        assert_equal "2.0.2\n", capture_stdout { Rake::Task["semverve:increment:patch"].invoke }
+        assert_equal "Updating to version 2.0.2 (was 2.0.1)\n", capture_stdout { Rake::Task["semverve:increment:patch"].invoke }
         assert_match(/PATCH = 2/, File.read(path))
       end
     end
@@ -81,7 +82,7 @@ module Semverve
 
         Task.new
 
-        assert_equal "2.1.0\n", capture_stdout { Rake::Task["semverve:increment:minor"].invoke }
+        assert_equal "Updating to version 2.1.0 (was 2.0.1)\n", capture_stdout { Rake::Task["semverve:increment:minor"].invoke }
         assert_match(/MINOR = 1/, File.read(path))
         assert_match(/PATCH = 0/, File.read(path))
       end
@@ -94,7 +95,7 @@ module Semverve
 
         Task.new
 
-        assert_equal "3.0.0\n", capture_stdout { Rake::Task["semverve:increment:major"].invoke }
+        assert_equal "Updating to version 3.0.0 (was 2.0.1)\n", capture_stdout { Rake::Task["semverve:increment:major"].invoke }
         assert_match(/MAJOR = 3/, File.read(path))
         assert_match(/MINOR = 0/, File.read(path))
         assert_match(/PATCH = 0/, File.read(path))
@@ -108,8 +109,132 @@ module Semverve
 
         Task.new { |config| config.format = :simple }
 
-        assert_equal "2.0.2\n", capture_stdout { Rake::Task["semverve:increment:patch"].invoke }
+        assert_equal "Updating to version 2.0.2 (was 2.0.1)\n", capture_stdout { Rake::Task["semverve:increment:patch"].invoke }
         assert_match(/VERSION = "2.0.2"/, File.read(path))
+      end
+    end
+
+    def test_set_updates_module_format
+      in_project do
+        write_gemspec("my_gem")
+        path = write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        stdout = with_env("VERSION" => "2.3.4") do
+          capture_stdout { Rake::Task["semverve:set"].invoke }
+        end
+
+        assert_equal "Updating to version 2.3.4 (was 2.0.1)\n", stdout
+        assert_match(/MAJOR = 2/, File.read(path))
+        assert_match(/MINOR = 3/, File.read(path))
+        assert_match(/PATCH = 4/, File.read(path))
+      end
+    end
+
+    def test_set_updates_simple_format
+      in_project do
+        write_gemspec("my_gem")
+        path = write_simple_version("MyGem", "2.0.1")
+
+        Task.new { |config| config.format = :simple }
+
+        stdout = with_env("VERSION" => "2.3.4") do
+          capture_stdout { Rake::Task["semverve:set"].invoke }
+        end
+
+        assert_equal "Updating to version 2.3.4 (was 2.0.1)\n", stdout
+        assert_match(/VERSION = "2.3.4"/, File.read(path))
+      end
+    end
+
+    def test_set_fails_without_version
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        error = assert_raise(Error) { Rake::Task["semverve:set"].invoke }
+        assert_equal "Set VERSION=MAJOR.MINOR.PATCH.", error.message
+      end
+    end
+
+    def test_set_fails_with_invalid_version
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        error = with_env("VERSION" => "nope") do
+          assert_raise(Error) { Rake::Task["semverve:set"].invoke }
+        end
+
+        assert_match(/Expected a semantic version/, error.message)
+      end
+    end
+
+    def test_set_lower_version_warns_and_updates
+      in_project do
+        write_gemspec("my_gem")
+        path = write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        stdout, stderr = with_env("VERSION" => "1.9.9") do
+          capture_output { Rake::Task["semverve:set"].invoke }
+        end
+
+        assert_equal "Updating to version 1.9.9 (was 2.0.1)\n", stdout
+        assert_equal "Warning: updating to version 1.9.9, which is lower than the current version 2.0.1.\n", stderr
+        assert_match(/MAJOR = 1/, File.read(path))
+        assert_match(/MINOR = 9/, File.read(path))
+        assert_match(/PATCH = 9/, File.read(path))
+      end
+    end
+
+    def test_set_same_version_is_noop
+      commands = []
+
+      in_project do
+        write_gemspec("my_gem")
+        path = write_module_version("MyGem", "2.0.1")
+        original_content = File.read(path)
+
+        Task.new do |config|
+          config.bundle_lock = true
+          config.command_runner = ->(command) { commands << command }
+        end
+
+        stdout, stderr = with_env("VERSION" => "2.0.1") do
+          capture_output { Rake::Task["semverve:set"].invoke }
+        end
+
+        assert_equal "Version is already 2.0.1\n", stdout
+        assert_empty stderr
+        assert_equal original_content, File.read(path)
+        assert_empty commands
+      end
+    end
+
+    def test_set_runs_bundle_lock_when_enabled
+      commands = []
+
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new do |config|
+          config.bundle_lock = true
+          config.command_runner = ->(command) { commands << command }
+        end
+
+        with_env("VERSION" => "2.0.2") do
+          capture_stdout { Rake::Task["semverve:set"].invoke }
+        end
+
+        assert_equal ["bundle lock"], commands
       end
     end
 
@@ -340,13 +465,22 @@ module Semverve
     end
 
     def capture_stdout
+      stdout, = capture_output { yield }
+      stdout
+    end
+
+    def capture_output
       original_stdout = $stdout
+      original_stderr = $stderr
       output = StringIO.new
+      errors = StringIO.new
       $stdout = output
+      $stderr = errors
       yield
-      output.string
+      [output.string, errors.string]
     ensure
       $stdout = original_stdout
+      $stderr = original_stderr
     end
 
     def with_env(values)

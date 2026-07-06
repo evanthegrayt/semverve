@@ -4,6 +4,7 @@ require "rake"
 
 require_relative "../semverve"
 require_relative "generator"
+require_relative "semantic_version"
 require_relative "version_file"
 
 module Semverve
@@ -97,23 +98,62 @@ module Semverve
         task :generate do
           puts "Generated #{Generator.new(Semverve.configuration.resolved).generate}"
         end
+
+        desc "Set the version.rb file to VERSION"
+        task :set do
+          set
+        end
       end
     end
 
     private
 
     ##
-    # Increments a version level and prints the new version.
+    # Increments a version level and reports the update.
     #
     # @param [Symbol] level
     #
     # @return [void]
     def increment(level)
       configuration = Semverve.configuration.resolved
-      next_version = VersionFile.new(configuration).increment(level)
-      configuration.command_runner.call("bundle lock") if configuration.bundle_lock
+      update = VersionFile.new(configuration).increment(level)
 
-      puts next_version
+      report(update, configuration)
+    end
+
+    ##
+    # Sets the version to the value from the +VERSION+ environment variable.
+    #
+    # @return [void]
+    def set
+      configuration = Semverve.configuration.resolved
+      requested_version = SemanticVersion.parse(
+        ENV.fetch("VERSION") { raise Error, "Set VERSION=MAJOR.MINOR.PATCH." }
+      )
+      update = VersionFile.new(configuration).set(requested_version)
+
+      report(update, configuration)
+    end
+
+    ##
+    # Reports an update and runs configured follow-up commands.
+    #
+    # @param [Semverve::VersionFile::UpdateResult] update
+    # @param [Semverve::ResolvedConfiguration] configuration
+    #
+    # @return [void]
+    def report(update, configuration)
+      unless update.changed?
+        puts "Version is already #{update.version}"
+        return
+      end
+
+      if update.version < update.previous_version
+        warn "Warning: updating to version #{update.version}, which is lower than the current version #{update.previous_version}."
+      end
+
+      puts "Updating to version #{update.version} (was #{update.previous_version})"
+      configuration.command_runner.call("bundle lock") if configuration.bundle_lock
     end
   end
 end

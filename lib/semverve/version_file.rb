@@ -8,6 +8,44 @@ module Semverve
   # Reads and updates an existing version file.
   class VersionFile
     ##
+    # Result of attempting to update a version file.
+    class UpdateResult
+      ##
+      # Version parsed before the update.
+      #
+      # @return [Semverve::SemanticVersion]
+      attr_reader :previous_version
+
+      ##
+      # Version requested by the update.
+      #
+      # @return [Semverve::SemanticVersion]
+      attr_reader :version
+
+      ##
+      # Initializes an update result.
+      #
+      # @param [Semverve::SemanticVersion] previous_version
+      # @param [Semverve::SemanticVersion] version
+      # @param [Boolean] changed
+      #
+      # @return [Semverve::VersionFile::UpdateResult]
+      def initialize(previous_version:, version:, changed:)
+        @previous_version = previous_version
+        @version = version
+        @changed = changed
+      end
+
+      ##
+      # Whether the version file was changed.
+      #
+      # @return [Boolean]
+      def changed?
+        @changed
+      end
+    end
+
+    ##
     # Initializes a version-file reader and writer.
     #
     # @param [Semverve::ResolvedConfiguration] configuration
@@ -31,12 +69,19 @@ module Semverve
     #
     # @param [Symbol, String] level
     #
-    # @return [Semverve::SemanticVersion]
+    # @return [Semverve::VersionFile::UpdateResult]
     def increment(level)
-      next_version = current.increment(level)
+      update { |version| version.increment(level) }
+    end
 
-      File.write(path, format.replace(read, next_version, path: path))
-      next_version
+    ##
+    # Sets the version file to an explicit semantic version.
+    #
+    # @param [Semverve::SemanticVersion] version
+    #
+    # @return [Semverve::VersionFile::UpdateResult]
+    def set(version)
+      update { version }
     end
 
     private
@@ -71,6 +116,27 @@ module Semverve
       end
 
       File.read(path)
+    end
+
+    ##
+    # Updates the version file with the version returned by the block.
+    #
+    # @yieldparam [Semverve::SemanticVersion] version
+    #
+    # @return [Semverve::VersionFile::UpdateResult]
+    def update
+      content = read
+      previous_version = format.parse(content, path: path)
+      next_version = yield previous_version
+      changed = previous_version != next_version
+
+      File.write(path, format.replace(content, next_version, path: path)) if changed
+
+      UpdateResult.new(
+        previous_version: previous_version,
+        version: next_version,
+        changed: changed
+      )
     end
   end
 end
