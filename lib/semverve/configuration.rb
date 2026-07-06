@@ -10,6 +10,7 @@ module Semverve
   # Mutable configuration used before Semverve resolves project defaults.
   class Configuration
     VALID_VERSION_CHECKS = [:doc_references, :code_references, :metadata].freeze
+    DEFAULT_VERSION_CODE_REFERENCE_PATTERN = /^\s*(?:(?:[A-Z]\w*::)*(?:[A-Z]\w*VERSION[A-Z0-9_]*|VERSION)|(?:[a-z_]\w*|self)\.version)\s*=\s*(?<quote>["'])(?<version>\d+\.\d+\.\d+)\k<quote>/
 
     ##
     # Whether increments should run +bundle lock+ after writing a version.
@@ -60,6 +61,12 @@ module Semverve
     attr_accessor :version_code_reference_files
 
     ##
+    # Pattern used to find safe version literals in code files.
+    #
+    # @return [Regexp]
+    attr_reader :version_code_reference_pattern
+
+    ##
     # Documentation files to scan for version references.
     #
     # @return [Rake::FileList]
@@ -86,6 +93,7 @@ module Semverve
       @command_runner = ->(command) { system(command) }
       @format = :module
       @version_code_reference_files = Rake::FileList[]
+      self.version_code_reference_pattern = DEFAULT_VERSION_CODE_REFERENCE_PATTERN
       @version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
         ".git/**/*",
         "coverage/**/*",
@@ -113,9 +121,21 @@ module Semverve
         version_file: metadata.version_file,
         version_checks: normalized_version_checks,
         version_code_reference_files: version_code_reference_files,
+        version_code_reference_pattern: version_code_reference_pattern,
         version_doc_reference_files: version_doc_reference_files,
         version_reference_mode: normalized_version_reference_mode
       )
+    end
+
+    ##
+    # Sets the pattern used to find safe version literals in code files.
+    #
+    # @param [Regexp] pattern
+    #
+    # @return [Regexp]
+    def version_code_reference_pattern=(pattern)
+      validate_version_code_reference_pattern(pattern)
+      @version_code_reference_pattern = pattern
     end
 
     ##
@@ -177,6 +197,22 @@ module Semverve
       valid_checks = "#{valid_check_names[0...-1].join(", ")}, or #{valid_check_names.last}"
       raise Error, "Unknown version check #{invalid_checks.map(&:inspect).join(", ")}. Use #{valid_checks}."
     end
+
+    ##
+    # Validates the configured code reference pattern.
+    #
+    # @param [Object] pattern
+    #
+    # @return [void]
+    def validate_version_code_reference_pattern(pattern)
+      unless pattern.is_a?(Regexp)
+        raise Error, "version_code_reference_pattern must be a Regexp."
+      end
+
+      unless pattern.named_captures.key?("version")
+        raise Error, "version_code_reference_pattern must include a named capture called version."
+      end
+    end
   end
 
   ##
@@ -237,6 +273,12 @@ module Semverve
     attr_reader :version_code_reference_files
 
     ##
+    # Resolved code pattern used to scan safe version literals.
+    #
+    # @return [Regexp]
+    attr_reader :version_code_reference_pattern
+
+    ##
     # Resolved documentation files to scan for version references.
     #
     # @return [Rake::FileList]
@@ -260,6 +302,7 @@ module Semverve
     # @param [String] version_file
     # @param [Array<Symbol>] version_checks
     # @param [Rake::FileList] version_code_reference_files
+    # @param [Regexp] version_code_reference_pattern
     # @param [Rake::FileList] version_doc_reference_files
     # @param [Symbol] version_reference_mode
     #
@@ -274,6 +317,7 @@ module Semverve
       version_file:,
       version_checks:,
       version_code_reference_files:,
+      version_code_reference_pattern:,
       version_doc_reference_files:,
       version_reference_mode:
     )
@@ -286,6 +330,7 @@ module Semverve
       @version_file = version_file
       @version_checks = version_checks
       @version_code_reference_files = version_code_reference_files
+      @version_code_reference_pattern = version_code_reference_pattern
       @version_doc_reference_files = version_doc_reference_files
       @version_reference_mode = version_reference_mode
     end
