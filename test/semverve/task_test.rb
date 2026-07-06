@@ -26,8 +26,8 @@ module Semverve
 
     def test_defines_semverve_tasks
       in_project do
-        write_gemspec("standup_md")
-        write_module_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
 
         Task.new
 
@@ -42,8 +42,8 @@ module Semverve
 
     def test_current_reads_module_format
       in_project do
-        write_gemspec("standup_md")
-        write_module_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
 
         Task.new
 
@@ -53,8 +53,8 @@ module Semverve
 
     def test_current_reads_simple_format
       in_project do
-        write_gemspec("standup_md")
-        write_simple_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        write_simple_version("MyGem", "2.0.1")
 
         Task.new { |config| config.format = :simple }
 
@@ -64,8 +64,8 @@ module Semverve
 
     def test_increment_patch_updates_module_format
       in_project do
-        write_gemspec("standup_md")
-        path = write_module_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        path = write_module_version("MyGem", "2.0.1")
 
         Task.new
 
@@ -76,8 +76,8 @@ module Semverve
 
     def test_increment_minor_updates_module_format
       in_project do
-        write_gemspec("standup_md")
-        path = write_module_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        path = write_module_version("MyGem", "2.0.1")
 
         Task.new
 
@@ -89,8 +89,8 @@ module Semverve
 
     def test_increment_major_updates_module_format
       in_project do
-        write_gemspec("standup_md")
-        path = write_module_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        path = write_module_version("MyGem", "2.0.1")
 
         Task.new
 
@@ -103,8 +103,8 @@ module Semverve
 
     def test_increment_updates_simple_format
       in_project do
-        write_gemspec("standup_md")
-        path = write_simple_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        path = write_simple_version("MyGem", "2.0.1")
 
         Task.new { |config| config.format = :simple }
 
@@ -117,8 +117,8 @@ module Semverve
       commands = []
 
       in_project do
-        write_gemspec("standup_md")
-        write_module_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
 
         Task.new do |config|
           config.command_runner = ->(command) { commands << command }
@@ -134,8 +134,8 @@ module Semverve
       commands = []
 
       in_project do
-        write_gemspec("standup_md")
-        write_module_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
 
         Task.new do |config|
           config.bundle_lock = true
@@ -182,15 +182,15 @@ module Semverve
 
     def test_generate_defaults_to_module_format
       in_project do
-        write_gemspec("standup_md")
+        write_gemspec("my_gem")
 
         Task.new
 
         output = capture_stdout { Rake::Task["semverve:generate"].invoke }
-        path = File.realpath(File.join(@tmpdir, "lib", "standup_md", "version.rb"))
+        path = File.realpath(File.join(@tmpdir, "lib", "my_gem", "version.rb"))
 
         assert_match(/Generated #{Regexp.escape(path)}/, output)
-        assert_match(/module StandupMd/, File.read(path))
+        assert_match(/module MyGem/, File.read(path))
         assert_match(/MAJOR = 0/, File.read(path))
         assert_match(/MINOR = 1/, File.read(path))
         assert_match(/PATCH = 0/, File.read(path))
@@ -199,7 +199,7 @@ module Semverve
 
     def test_generate_accepts_env_version_and_simple_format
       in_project do
-        write_gemspec("standup_md")
+        write_gemspec("my_gem")
 
         Task.new
 
@@ -207,14 +207,14 @@ module Semverve
           capture_stdout { Rake::Task["semverve:generate"].invoke }
         end
 
-        assert_match(/VERSION = "1.2.3"/, File.read(File.join(@tmpdir, "lib", "standup_md", "version.rb")))
+        assert_match(/VERSION = "1.2.3"/, File.read(File.join(@tmpdir, "lib", "my_gem", "version.rb")))
       end
     end
 
     def test_generate_fails_when_file_exists
       in_project do
-        write_gemspec("standup_md")
-        write_module_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
 
         Task.new
 
@@ -225,8 +225,8 @@ module Semverve
 
     def test_generate_can_force_overwrite
       in_project do
-        write_gemspec("standup_md")
-        path = write_module_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        path = write_module_version("MyGem", "2.0.1")
 
         Task.new
 
@@ -263,7 +263,7 @@ module Semverve
 
     def test_missing_version_file_fails_loudly
       in_project do
-        write_gemspec("standup_md")
+        write_gemspec("my_gem")
 
         Task.new
 
@@ -274,8 +274,8 @@ module Semverve
 
     def test_unparseable_version_file_fails_loudly
       in_project do
-        write_gemspec("standup_md")
-        write_file(File.join("lib", "standup_md", "version.rb"), "VERSION = \"nope\"\n")
+        write_gemspec("my_gem")
+        write_file(File.join("lib", "my_gem", "version.rb"), "VERSION = \"nope\"\n")
 
         Task.new { |config| config.format = :simple }
 
@@ -286,8 +286,8 @@ module Semverve
 
     def test_task_installation_is_idempotent
       in_project do
-        write_gemspec("standup_md")
-        write_module_version("StandupMD", "2.0.1")
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
 
         Task.new
         Task.new

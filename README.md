@@ -39,8 +39,8 @@ require "semverve/task"
 Semverve.configure do |config|
   config.format = :module
   config.bundle_lock = true
-  config.version_file = "lib/standup_md/version.rb"
-  config.module_name = "StandupMD"
+  config.version_file = "lib/my_gem/version.rb"
+  config.module_name = "MyGem"
 end
 ```
 
@@ -60,7 +60,7 @@ under a `Version` module and exposes a top-level `VERSION` constant.
 The `:simple` format stores only:
 
 ```ruby
-module StandupMD
+module MyGem
   VERSION = "1.0.0"
 end
 ```
