@@ -3,7 +3,6 @@
 Rake tasks for reading, generating, and incrementing Ruby gem version files.
 
 ## About
-
 Maintaining a gem version is not hard, but it is easy to forget. I have had
 plenty of changes where the code was ready, the tests were green, the PR was
 merged, and then I noticed that the version file, lockfile, or docs still said
@@ -21,13 +20,10 @@ project still agrees with that version. It can catch stale README references,
 safe code literals, `.gemspec` drift, and a stale `Gemfile.lock` entry. If you
 want Semverve to do the mechanical cleanup, the matching `*:fix` tasks can
 update safe references and run `bundle lock` for generated lockfile drift.
-
-The goal is not to replace your release process. It is to take care of the
-small, forgettable version-maintenance chores around that process, so you do
-not have to remember them at the worst possible moment.
+Specific findings can be skipped with magic comments, similar to Rubocop and
+RDoc.
 
 ## Installation
-
 Add the gem to your Gemfile:
 
 ```ruby
@@ -60,7 +56,6 @@ rake semverve:fix:metadata
 ```
 
 ## Configuration
-
 By default, Semverve reads the single `.gemspec` in the project root, uses
 `spec.name` as the gem name, and manages `lib/<gem_name>/version.rb`.
 
@@ -139,7 +134,6 @@ end
 ```
 
 ## Formats
-
 The default `:module` format stores `MAJOR`, `MINOR`, and `PATCH` constants
 under a `Version` module and exposes a top-level `VERSION` constant.
 
@@ -152,7 +146,6 @@ end
 ```
 
 ## Generating
-
 Generate the default module format:
 
 ```sh
@@ -172,7 +165,6 @@ rake semverve:generate FORCE=true
 ```
 
 ## Incrementing
-
 ```sh
 rake semverve:increment:patch
 rake semverve:increment:minor
@@ -191,7 +183,6 @@ Updating to version 2.0.2 (was 2.0.1)
 Set `config.bundle_lock = true` to run `bundle lock` after increments.
 
 ## Setting
-
 Set an exact version without incrementing:
 
 ```sh
@@ -275,7 +266,6 @@ rake semverve:fix:metadata
 runs `bundle lock` for `Gemfile.lock` drift.
 
 ### Version references
-
 Version references are prose-like references to versions. These are usually in
 README files, docs, guides, or comments. By default, Semverve scans README files
 throughout the repo:
@@ -335,7 +325,6 @@ This migration note intentionally mentions 1.0.0. <!-- semverve:ignore-version-r
 ```
 
 ### Code version literals
-
 Code scanning is opt-in to avoid false positives. This is for arbitrary project
 code, not gem metadata. The default is:
 
@@ -371,7 +360,6 @@ spec.version = "1.2.2"
 Arbitrary string examples are ignored.
 
 ### Metadata
-
 Metadata checks are part of `rake semverve:check` by default. They compare the
 current version file against:
 
