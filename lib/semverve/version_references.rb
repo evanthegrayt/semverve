@@ -3,6 +3,7 @@
 require "ripper"
 
 require_relative "error"
+require_relative "file_list_resolver"
 require_relative "semantic_version"
 
 module Semverve
@@ -168,29 +169,8 @@ module Semverve
     #
     # @return [Array<String>]
     def files
-      @files ||= begin
-        configured_files = Dir.chdir(root) do
-          configuration.version_reference_files.to_a.flat_map { |path| expand_file_list_entry(path) }
-            .reject { |path| configuration.version_reference_files.excluded_from_list?(path) }
-        end
-
-        configured_files.map { |path| File.expand_path(path, root) }
-          .select { |path| File.file?(path) }
-          .reject { |path| ignored_path?(path) }
-          .uniq
-      end
-    end
-
-    ##
-    # Expands glob-like entries that were appended to a Rake::FileList.
-    #
-    # @param [String] path
-    #
-    # @return [Array<String>]
-    def expand_file_list_entry(path)
-      matches = Dir.glob(path)
-
-      matches.empty? ? [path] : matches
+      @files ||= FileListResolver.new(root: root, file_list: configuration.version_reference_files).files
+        .reject { |path| ignored_path?(path) }
     end
 
     ##
@@ -411,7 +391,10 @@ module Semverve
       lines = content.lines
       return true if lines.fetch(line - 1).include?(IGNORE_MARKER)
 
-      previous_nonblank_line = lines[0...(line - 1)].rfind { |candidate| !candidate.strip.empty? }
+      # Ruby 3.2 and 3.3 do not support Array#rfind.
+      # rubocop:disable Style/ReverseFind
+      previous_nonblank_line = lines[0...(line - 1)].reverse_each.find { |candidate| !candidate.strip.empty? }
+      # rubocop:enable Style/ReverseFind
       previous_nonblank_line&.include?(IGNORE_MARKER)
     end
 

@@ -27,6 +27,12 @@ rake semverve:generate
 rake semverve:set VERSION=1.2.3
 rake semverve:sync
 rake semverve:sync:fix
+rake semverve:sync:references
+rake semverve:sync:references:fix
+rake semverve:sync:code
+rake semverve:sync:code:fix
+rake semverve:sync:metadata
+rake semverve:sync:metadata:fix
 ```
 
 ## Configuration
@@ -44,7 +50,8 @@ Semverve.configure do |config|
   config.bundle_lock = true
   config.version_file = "lib/my_gem/version.rb"
   config.module_name = "MyGem"
-  config.version_reference_files.append("doc/**/*.md", "lib/**/*.rb")
+  config.version_code_reference_files.append("lib/**/*.rb")
+  config.version_reference_files.append("doc/**/*.md")
   config.version_reference_mode = :non_current
 end
 ```
@@ -139,25 +146,50 @@ Updating to version 1.9.9 (was 2.0.1)
 Set `config.bundle_lock = true` to run `bundle lock` after successful version
 changes.
 
-## Syncing version references
+## Syncing version references, code, and metadata
 
-Check README files for references to older versions:
+Run every sync check:
 
 ```sh
 rake semverve:sync
 ```
 
-Findings are printed in a parseable format and the task exits non-zero:
+This checks:
+
+- README version references, plus any configured docs or comment files
+- configured code files for safe version literals
+- the gemspec version and `Gemfile.lock` entry
+
+Findings are printed in parseable formats and the task exits non-zero:
 
 ```text
 README.md:12:24: version reference 1.2.2 -> 1.2.3
+lib/my_gem/constants.rb:1:16: code version literal 1.2.2 -> 1.2.3
+my_gem.gemspec:3:18: gemspec version 1.2.2 -> 1.2.3
+Gemfile.lock:4:13: locked version 1.2.2 -> 1.2.3
 ```
 
-Replace stale references with the current version:
+Run every available fix:
 
 ```sh
 rake semverve:sync:fix
 ```
+
+Use focused tasks when you want only one surface:
+
+```sh
+rake semverve:sync:references
+rake semverve:sync:references:fix
+rake semverve:sync:code
+rake semverve:sync:code:fix
+rake semverve:sync:metadata
+rake semverve:sync:metadata:fix
+```
+
+`semverve:sync:metadata:fix` rewrites literal gemspec versions when safe and
+runs `bundle lock` for `Gemfile.lock` drift.
+
+### Version references
 
 By default, Semverve scans README files throughout the repo. Add docs or Ruby
 comments without replacing the defaults:
@@ -190,3 +222,22 @@ end
 
 Ignore an intentional reference with `semverve:ignore-version-reference` on the
 same line or the preceding nonblank line.
+
+### Code version literals
+
+Code scanning is opt-in to avoid false positives:
+
+```ruby
+Semverve.configure do |config|
+  config.version_code_reference_files.append("lib/**/*.rb")
+end
+```
+
+Ruby code checks only obvious version assignments/constants, such as:
+
+```ruby
+APP_VERSION = "1.2.2"
+spec.version = "1.2.2"
+```
+
+Arbitrary string examples are ignored.
