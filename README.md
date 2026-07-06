@@ -82,6 +82,7 @@ Semverve.configure do |config|
   config.bundle_lock = true
   config.version_file = "lib/my_gem/version.rb"
   config.module_name = "MyGem"
+  config.version_checks = [:doc_references, :code_references, :metadata]
   config.version_code_reference_files.append("lib/**/*.rb")
   config.version_doc_reference_files.append("doc/**/*.md")
   config.version_reference_mode = :non_current
@@ -95,6 +96,7 @@ Semverve.configure do |config|
   config.format = :module
   config.bundle_lock = false
   config.root = Dir.pwd
+  config.version_checks = [:doc_references, :code_references, :metadata]
   config.version_reference_mode = :older
   config.version_code_reference_files = Rake::FileList[]
   config.version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
@@ -105,6 +107,10 @@ Semverve.configure do |config|
   )
 end
 ```
+
+The empty `version_code_reference_files` default only applies to arbitrary code
+literal scanning. `rake semverve:check` still checks the resolved `.gemspec`
+version and matching `Gemfile.lock` entry through its default metadata check.
 
 The gem name, module name, and version-file path are inferred by default:
 
@@ -222,7 +228,7 @@ Run every version check with:
 rake semverve:check
 ```
 
-This checks:
+By default, this checks:
 
 - README version references, plus any configured docs or comment files
 - configured code files for safe version literals
@@ -242,6 +248,17 @@ Run every available fix:
 ```sh
 rake semverve:fix
 ```
+
+Choose which surfaces the umbrella `check` and `fix` tasks run with
+`config.version_checks`:
+
+```ruby
+Semverve.configure do |config|
+  config.version_checks = [:doc_references, :metadata]
+end
+```
+
+The allowed values are `:doc_references`, `:code_references`, and `:metadata`.
 
 Use focused tasks when you want only one surface:
 
@@ -319,7 +336,8 @@ This migration note intentionally mentions 1.0.0. <!-- semverve:ignore-version-r
 
 ### Code version literals
 
-Code scanning is opt-in to avoid false positives. The default is:
+Code scanning is opt-in to avoid false positives. This is for arbitrary project
+code, not gem metadata. The default is:
 
 ```ruby
 Semverve.configure do |config|
@@ -354,7 +372,7 @@ Arbitrary string examples are ignored.
 
 ### Metadata
 
-Metadata checks are always part of `rake semverve:check`. They compare the
+Metadata checks are part of `rake semverve:check` by default. They compare the
 current version file against:
 
 - the resolved `.gemspec` version
@@ -362,6 +380,9 @@ current version file against:
 
 Metadata always requires an exact match, regardless of
 `config.version_reference_mode`.
+
+No file-list configuration is needed for these checks. Semverve resolves the
+gemspec from the project root and reads `Gemfile.lock` when one exists.
 
 Dynamic gemspec versions work as expected:
 

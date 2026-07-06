@@ -719,6 +719,66 @@ module Semverve
       end
     end
 
+    def test_check_respects_configured_version_checks
+      in_project do
+        write_gemspec("my_gem", version: "2.0.0")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Install version 2.0.0.\n")
+        write_file(File.join("lib", "my_gem", "constants.rb"), "APP_VERSION = \"2.0.0\"\n")
+
+        Task.new do |config|
+          config.version_checks = [:doc_references, :metadata]
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        stdout, _stderr, error = capture_error(Error) { Rake::Task["semverve:check"].invoke }
+
+        assert_match(/README\.md:1:17: version reference 2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_match(/my_gem\.gemspec:\d+:\d+: gemspec version 2\.0\.0 -> 2\.0\.1/, stdout)
+        refute_match(/code version literal/, stdout)
+        assert_equal "Found 2 version check issues.", error.message
+      end
+    end
+
+    def test_fix_respects_configured_version_checks
+      commands = []
+
+      in_project do
+        gemspec_path = write_gemspec("my_gem", version: "2.0.0")
+        write_module_version("MyGem", "2.0.1")
+        readme_path = write_file("README.md", "Install version 2.0.0.\n")
+        code_path = write_file(File.join("lib", "my_gem", "constants.rb"), "APP_VERSION = \"2.0.0\"\n")
+        write_lockfile("my_gem", "2.0.0")
+
+        Task.new do |config|
+          config.command_runner = ->(command) { commands << command }
+          config.version_checks = [:code_references]
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        stdout = capture_stdout { Rake::Task["semverve:fix"].invoke }
+
+        assert_match(%r{Updated lib/my_gem/constants\.rb}, stdout)
+        assert_match(/Replaced 1 code version literal\./, stdout)
+        assert_equal "Install version 2.0.0.\n", File.read(readme_path)
+        assert_match(/APP_VERSION = "2\.0\.1"/, File.read(code_path))
+        assert_match(/spec.version = "2\.0\.0"/, File.read(gemspec_path))
+        assert_empty commands
+      end
+    end
+
+    def test_version_checks_rejects_unknown_checks
+      in_project do
+        error = assert_raises(Error) do
+          Task.new do |config|
+            config.version_checks = [:metadata, :everything]
+          end
+        end
+
+        assert_equal "Unknown version check :everything. Use :doc_references, :code_references, or :metadata.", error.message
+      end
+    end
+
     def test_check_fix_dispatches_all_fixers
       commands = []
 

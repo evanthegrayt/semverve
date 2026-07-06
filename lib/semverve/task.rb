@@ -189,11 +189,7 @@ module Semverve
     def check
       configuration, current_version = check_context
       report_findings(
-        [
-          ["version reference", VersionReferences.new(configuration, current_version).findings],
-          ["code version literal", VersionCodeReferences.new(configuration, current_version).findings],
-          [nil, VersionMetadata.new(configuration, current_version).findings]
-        ],
+        check_groups(configuration, current_version),
         current_version,
         clean_message: "Version checks passed."
       )
@@ -205,13 +201,7 @@ module Semverve
     # @return [void]
     def fix
       configuration, current_version = check_context
-      results = [
-        ["version reference", VersionReferences.new(configuration, current_version).fix],
-        ["code version literal", VersionCodeReferences.new(configuration, current_version).fix],
-        ["metadata version", VersionMetadata.new(configuration, current_version).fix]
-      ]
-
-      report_fix_results(results)
+      report_fix_results(fix_results(configuration, current_version))
     end
 
     ##
@@ -296,6 +286,48 @@ module Semverve
     def check_context
       configuration = Semverve.configuration.resolved
       [configuration, VersionFile.new(configuration).current]
+    end
+
+    ##
+    # Finding groups enabled for the umbrella check task.
+    #
+    # @param [Semverve::ResolvedConfiguration] configuration
+    # @param [Semverve::SemanticVersion] current_version
+    #
+    # @return [Array<Array(String, Array)>]
+    def check_groups(configuration, current_version)
+      groups = []
+      if configuration.version_checks.include?(:doc_references)
+        groups << ["version reference", VersionReferences.new(configuration, current_version).findings]
+      end
+      if configuration.version_checks.include?(:code_references)
+        groups << ["code version literal", VersionCodeReferences.new(configuration, current_version).findings]
+      end
+      if configuration.version_checks.include?(:metadata)
+        groups << [nil, VersionMetadata.new(configuration, current_version).findings]
+      end
+      groups
+    end
+
+    ##
+    # Fix results enabled for the umbrella fix task.
+    #
+    # @param [Semverve::ResolvedConfiguration] configuration
+    # @param [Semverve::SemanticVersion] current_version
+    #
+    # @return [Array<Array(String, #replacement_count, #changed_files)>]
+    def fix_results(configuration, current_version)
+      results = []
+      if configuration.version_checks.include?(:doc_references)
+        results << ["version reference", VersionReferences.new(configuration, current_version).fix]
+      end
+      if configuration.version_checks.include?(:code_references)
+        results << ["code version literal", VersionCodeReferences.new(configuration, current_version).fix]
+      end
+      if configuration.version_checks.include?(:metadata)
+        results << ["metadata version", VersionMetadata.new(configuration, current_version).fix]
+      end
+      results
     end
 
     ##
