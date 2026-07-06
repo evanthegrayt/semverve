@@ -1,27 +1,30 @@
-# semverve
-
-Rake tasks for reading, generating, and incrementing Ruby gem version files.
+# Semverve
+Rake tasks for handling the tedium surrounding maintaining a version number in
+your ruby project, with gusto!
 
 ## About
-Maintaining a gem version is not hard, but it is easy to forget. I have had
-plenty of changes where the code was ready, the tests were green, the PR was
-merged, and then I noticed that the version file, lockfile, or docs still said
-the old thing. Then comes the tiny follow-up PR that exists only because I did
-not remember to bump a number before merging.
+Maintaining a gem version is not hard, but there are so many little pieces that
+are easy to forget. How many times have you had changes where the code was
+ready, the tests were green, the PR was merged, you go to push the gem, and you
+realize you forgot to bump the version? Then comes the tiny follow-up PR that
+forces you to waste CI minutes for a two-line change, you submit it, and...  oh,
+no! You still have references to the old version number in your documentation!
+Rinse and repeat until you finally remember all the things.
 
-Semverve is meant to make that tedium boring in the best way. It gives a gem a
-small set of Rake tasks for reading the current version, generating a version
+Semverve is meant to make that tedium boring in the best way. It provides a gem
+a small set of Rake tasks for reading the current version, generating a version
 file, incrementing patch/minor/major versions, setting an exact version, and
-checking the places where version numbers tend to drift.
+checking the places where version numbers tend to drift, like `.gemspec` files and
+documentation.
 
-In a nutshell, `rake semverve:increment:patch` updates your configured
-`version.rb` file, and `rake semverve:check` checks whether the surrounding
-project still agrees with that version. It can catch stale README references,
-safe code literals, `.gemspec` drift, and a stale `Gemfile.lock` entry. If you
-want Semverve to do the mechanical cleanup, the matching `*:fix` tasks can
-update safe references and run `bundle lock` for generated lockfile drift.
-Specific findings can be skipped with magic comments, similar to Rubocop and
-RDoc.
+In a nutshell, `rake semverve:increment:(patch|minor|major)` updates
+your configured `version.rb` file, and `rake semverve:check` checks whether the
+surrounding project still agrees with that version. It can catch stale README
+references, safe code literals, `.gemspec` drift, and a stale `Gemfile.lock`
+entry. If you want Semverve to do the mechanical cleanup, the matching `*:fix`
+tasks can update safe references and run `bundle lock` for generated lockfile
+drift. Specific findings can be skipped with magic comments, similar to Rubocop
+and RDoc.
 
 ## Installation
 Add the gem to your Gemfile:
@@ -430,6 +433,20 @@ Semverve.configure do |config|
 end
 ```
 
+With that pattern, this line:
+
+```ruby
+release "1.2.2"
+```
+
+matches the full `release "1.2.2"` text, but only `1.2.2` is captured as
+`version`. If `rake semverve:fix:code` is updating references to `1.2.3`, the
+line becomes:
+
+```ruby
+release "1.2.3"
+```
+
 The custom value must be a `Regexp` and must include a named capture called
 `version`. Semverve replaces only that capture when running
 `rake semverve:fix:code`, and the captured value still has to parse as a
@@ -470,3 +487,17 @@ end
 
 `rake semverve:fix:metadata` updates safe literal gemspec assignments and
 runs `bundle lock` when the lockfile has drifted.
+
+## Reporting Bugs and Requesting Features
+If you have an idea or find a bug, please [create an
+issue](https://github.com/evanthegrayt/semverve/issues/new). Just make sure
+the topic doesn't already exist. Better yet, you can always submit a Pull
+Request.
+
+## Support this project
+I love knowing when people find my work useful. Any kind of support is very much
+appreciated!
+
+- ⭐️ Like the project? Star [the repository](https://github.com/evanthegrayt/semverve)!
+- ❤️ Love the project? Follow me [on GitHub](https://github.com/evanthegrayt)!
+- 💸 *Really* love it? Consider [buying me a tea](https://paypal.me/evanrgray)!
