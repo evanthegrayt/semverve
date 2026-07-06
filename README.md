@@ -1,6 +1,6 @@
 # Semverve
 Rake tasks for handling the tedium surrounding maintaining a version number in
-your ruby project, with gusto!
+your Ruby project, with gusto!
 
 ## About
 Maintaining a gem version is not hard, but there are so many little pieces that
@@ -11,8 +11,8 @@ forces you to waste CI minutes for a two-line change, you submit it, and...  oh,
 no! You still have references to the old version number in your documentation!
 Rinse and repeat until you finally remember all the things.
 
-Semverve is meant to make that tedium boring in the best way. It provides a gem
-a small set of Rake tasks for reading the current version, generating a version
+Semverve is meant to make that tedium boring in the best way. It provides a
+small set of Rake tasks for reading the current version, generating a version
 file, incrementing patch/minor/major versions, setting an exact version, and
 checking the places where version numbers tend to drift, like `.gemspec` files and
 documentation.
@@ -23,7 +23,7 @@ surrounding project still agrees with that version. It can catch stale README
 references, safe code literals, `.gemspec` drift, and a stale `Gemfile.lock`
 entry. If you want Semverve to do the mechanical cleanup, the matching `*:fix`
 tasks can update safe references and run `bundle lock` for generated lockfile
-drift. Specific findings can be skipped with magic comments, similar to Rubocop
+drift. Specific findings can be skipped with magic comments, similar to RuboCop
 and RDoc.
 
 ## Installation
@@ -137,6 +137,48 @@ Semverve::Task.new do |config|
   config.bundle_lock = true
 end
 ```
+
+## Publishing generated docs
+Semverve also includes an optional GitHub Pages publishing task for generated
+documentation. It builds docs on your current branch, opens the publishing
+branch in a temporary Git worktree, copies the generated docs there, commits any
+changes, and pushes the publishing branch.
+
+Add this to your Rakefile:
+
+```ruby
+require "semverve/docs_publisher/task"
+
+Semverve::DocsPublisher::Task.new
+```
+
+This defines:
+
+```text
+rake docs:publish
+rake docs:publish:dry_run
+```
+
+The defaults are equivalent to:
+
+```ruby
+Semverve::DocsPublisher::Task.new do |task|
+  task.root = Dir.pwd
+  task.build_task = "rerdoc"
+  task.source_dir = "docs"
+  task.target_dir = "docs"
+  task.branch = "gh-pages"
+  task.remote = "origin"
+  task.commit_message = "Update generated documentation"
+  task.allow_dirty = false
+  task.push = true
+  task.output = $stdout
+end
+```
+
+`docs:publish` requires a clean working tree by default. Set
+`task.allow_dirty = true` only when you intentionally want to publish generated
+documentation from uncommitted source changes.
 
 ## Rails apps
 Rails applications do not need gem-style version files, but an application
@@ -420,6 +462,12 @@ Ruby code checks only obvious version assignments/constants, such as:
 APP_VERSION = "1.2.2"
 spec.version = "1.2.2"
 ```
+
+The default pattern is Ruby-oriented. Semverve does not inspect file extensions
+or parse other languages for code literals; non-Ruby files are scanned as plain
+text with the same pattern. If a JavaScript, Python, or other source file uses a
+different version-literal shape, configure a custom pattern before adding those
+files.
 
 Arbitrary string examples are ignored.
 

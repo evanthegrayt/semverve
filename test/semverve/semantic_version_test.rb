@@ -23,5 +23,17 @@ module Semverve
     def test_compares_equal_versions
       assert_equal SemanticVersion.parse("1.2.3"), SemanticVersion.parse("1.2.3")
     end
+
+    def test_parse_rejects_invalid_versions
+      error = assert_raise(Error) { SemanticVersion.parse("1.2") }
+
+      assert_equal "Expected a semantic version in MAJOR.MINOR.PATCH format, got \"1.2\".", error.message
+    end
+
+    def test_increment_rejects_unknown_level
+      error = assert_raise(Error) { SemanticVersion.parse("1.2.3").increment(:build) }
+
+      assert_equal "Unknown version increment level: :build.", error.message
+    end
   end
 end
