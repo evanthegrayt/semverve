@@ -135,6 +135,43 @@ Semverve::Task.new do |config|
 end
 ```
 
+## Rails apps
+Rails applications do not need gem-style version files, but an application
+version can still be useful for release notes, support/debug screens,
+deployment metadata, or API output.
+
+When Rails is loaded, Semverve's Railtie installs the same `semverve:*` Rake
+tasks for `bin/rails`/`rails` automatically. To use Rails-style defaults, set
+the Rails preset:
+
+```ruby
+Semverve.configure do |config|
+  config.preset = :rails
+end
+```
+
+The Rails preset uses `Rails.root`, stores the version in
+`config/version.rb`, uses the `:simple` format, and infers the module name from
+your Rails application module when possible.
+
+Generate the file with:
+
+```sh
+bin/rails semverve:generate
+```
+
+If your app keeps the version somewhere else, override the path:
+
+```ruby
+Semverve.configure do |config|
+  config.preset = :rails
+  config.version_file = "config/releases/version.rb"
+end
+```
+
+Rails support is only a preset and a Railtie; Semverve does not require a dummy
+app, a Rails plugin layout, or a Rails dependency.
+
 ## Formats
 The default `:module` format stores `MAJOR`, `MINOR`, and `PATCH` constants
 under a `Version` module and exposes a top-level `VERSION` constant.

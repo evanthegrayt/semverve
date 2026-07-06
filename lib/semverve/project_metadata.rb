@@ -21,7 +21,7 @@ module Semverve
     #
     # @return [String]
     def gem_name
-      explicit_gem_name || version_file_gem_name || gemspec_name
+      explicit_gem_name || configured_version_file_gem_name || gemspec_name
     end
 
     ##
@@ -29,7 +29,7 @@ module Semverve
     #
     # @return [String]
     def module_name
-      explicit_module_name || camelize(gem_name)
+      explicit_module_name || configured_module_name || camelize(gem_name)
     end
 
     ##
@@ -37,7 +37,7 @@ module Semverve
     #
     # @return [String]
     def version_file
-      explicit_version_file || File.join("lib", gem_name, "version.rb")
+      configured_version_file || File.join("lib", gem_name, "version.rb")
     end
 
     private
@@ -57,6 +57,14 @@ module Semverve
     end
 
     ##
+    # Configured gem name after applying presets.
+    #
+    # @return [String, nil]
+    def configured_gem_name
+      configuration.resolved_value(:gem_name)
+    end
+
+    ##
     # Explicitly configured Ruby module name.
     #
     # @return [String, nil]
@@ -65,21 +73,30 @@ module Semverve
     end
 
     ##
-    # Explicitly configured version-file path.
+    # Configured Ruby module name after applying presets.
     #
     # @return [String, nil]
-    def explicit_version_file
-      configuration.version_file
+    def configured_module_name
+      configuration.resolved_value(:module_name)
     end
 
     ##
-    # Gem name inferred from the parent directory of the version-file path.
+    # Configured version-file path after applying presets.
     #
     # @return [String, nil]
-    def version_file_gem_name
-      return unless explicit_version_file
+    def configured_version_file
+      configuration.resolved_value(:version_file)
+    end
 
-      File.basename(File.dirname(explicit_version_file))
+    ##
+    # Gem name inferred from the parent directory of the configured version file.
+    #
+    # @return [String, nil]
+    def configured_version_file_gem_name
+      return configured_gem_name if configured_gem_name
+      return unless configured_version_file
+
+      File.basename(File.dirname(configured_version_file))
     end
 
     ##

@@ -3,6 +3,7 @@
 require "rake"
 
 require_relative "error"
+require_relative "presets"
 require_relative "project_metadata"
 
 module Semverve
@@ -28,31 +29,37 @@ module Semverve
     # Version-file format to read, replace, or generate.
     #
     # @return [Symbol, String]
-    attr_accessor :format
+    attr_reader :format
 
     ##
     # Explicit gem name to use instead of inferring one from the project.
     #
     # @return [String, nil]
-    attr_accessor :gem_name
+    attr_reader :gem_name
 
     ##
     # Explicit Ruby module name to use in generated version files.
     #
     # @return [String, nil]
-    attr_accessor :module_name
+    attr_reader :module_name
+
+    ##
+    # Framework preset used to apply project defaults.
+    #
+    # @return [Symbol, String, nil]
+    attr_reader :preset
 
     ##
     # Project root used when inferring metadata and expanding paths.
     #
     # @return [String, nil]
-    attr_accessor :root
+    attr_reader :root
 
     ##
     # Explicit version-file path relative to the project root.
     #
     # @return [String, nil]
-    attr_accessor :version_file
+    attr_reader :version_file
 
     ##
     # Code files to scan for safe version literals.
@@ -89,9 +96,11 @@ module Semverve
     #
     # @return [Semverve::Configuration]
     def initialize
+      @explicit_attributes = []
       @bundle_lock = false
       @command_runner = ->(command) { system(command) }
       @format = :module
+      @preset = nil
       @version_code_reference_files = Rake::FileList[]
       self.version_code_reference_pattern = DEFAULT_VERSION_CODE_REFERENCE_PATTERN
       @version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
@@ -128,6 +137,67 @@ module Semverve
     end
 
     ##
+    # Sets the version-file format.
+    #
+    # @param [Symbol, String] format
+    #
+    # @return [Symbol, String]
+    def format=(format)
+      set_explicit(:format, format)
+    end
+
+    ##
+    # Sets the gem name used for metadata checks.
+    #
+    # @param [String, nil] gem_name
+    #
+    # @return [String, nil]
+    def gem_name=(gem_name)
+      set_explicit(:gem_name, gem_name)
+    end
+
+    ##
+    # Sets the module name used for generated version files.
+    #
+    # @param [String, nil] module_name
+    #
+    # @return [String, nil]
+    def module_name=(module_name)
+      set_explicit(:module_name, module_name)
+    end
+
+    ##
+    # Sets the framework preset used for project defaults.
+    #
+    # @param [Symbol, String, nil] preset
+    #
+    # @return [Symbol, nil]
+    def preset=(preset)
+      @preset_defaults = nil
+      @preset = preset.nil? ? nil : Presets.fetch(preset).name
+    end
+
+    ##
+    # Sets the project root used when expanding paths.
+    #
+    # @param [String, nil] root
+    #
+    # @return [String, nil]
+    def root=(root)
+      set_explicit(:root, root)
+    end
+
+    ##
+    # Sets the version-file path relative to the project root.
+    #
+    # @param [String, nil] version_file
+    #
+    # @return [String, nil]
+    def version_file=(version_file)
+      set_explicit(:version_file, version_file)
+    end
+
+    ##
     # Sets the pattern used to find safe version literals in code files.
     #
     # @param [Regexp] pattern
@@ -153,7 +223,7 @@ module Semverve
     #
     # @return [String]
     def expanded_root
-      File.expand_path(root || Dir.pwd)
+      File.expand_path(resolved_value(:root) || Dir.pwd)
     end
 
     ##
@@ -161,7 +231,20 @@ module Semverve
     #
     # @return [Symbol]
     def normalized_format
-      format.to_sym
+      resolved_value(:format).to_sym
+    end
+
+    ##
+    # Resolved value for a configurable attribute before metadata inference.
+    #
+    # @param [Symbol] attribute
+    #
+    # @return [Object]
+    def resolved_value(attribute)
+      return public_send(attribute) if explicit_attribute?(attribute)
+      return preset_defaults[attribute] if preset_defaults.key?(attribute)
+
+      public_send(attribute)
     end
 
     ##
@@ -212,6 +295,39 @@ module Semverve
       unless pattern.named_captures.key?("version")
         raise Error, "version_code_reference_pattern must include a named capture called version."
       end
+    end
+
+    private
+
+    ##
+    # Whether an attribute was explicitly set by the user.
+    #
+    # @param [Symbol] attribute
+    #
+    # @return [Boolean]
+    def explicit_attribute?(attribute)
+      @explicit_attributes.include?(attribute)
+    end
+
+    ##
+    # Stores an explicit user-provided setting.
+    #
+    # @param [Symbol] attribute
+    # @param [Object] value
+    #
+    # @return [Object]
+    def set_explicit(attribute, value)
+      @preset_defaults = nil
+      @explicit_attributes << attribute unless explicit_attribute?(attribute)
+      instance_variable_set(:"@#{attribute}", value)
+    end
+
+    ##
+    # Defaults supplied by the configured preset.
+    #
+    # @return [Hash]
+    def preset_defaults
+      @preset_defaults ||= Presets.defaults_for(preset, self)
     end
   end
 
