@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "rake"
+
 require_relative "project_metadata"
 
 module Semverve
@@ -49,6 +51,24 @@ module Semverve
     attr_accessor :version_file
 
     ##
+    # Code files to scan for safe version literals.
+    #
+    # @return [Rake::FileList]
+    attr_accessor :version_code_reference_files
+
+    ##
+    # Files to scan for version references.
+    #
+    # @return [Rake::FileList]
+    attr_accessor :version_reference_files
+
+    ##
+    # Version-reference comparison mode.
+    #
+    # @return [Symbol, String]
+    attr_accessor :version_reference_mode
+
+    ##
     # Initializes configuration with Semverve's default settings.
     #
     # @return [Semverve::Configuration]
@@ -56,6 +76,14 @@ module Semverve
       @bundle_lock = false
       @command_runner = ->(command) { system(command) }
       @format = :module
+      @version_code_reference_files = Rake::FileList[]
+      @version_reference_files = Rake::FileList["README*", "**/README*"].exclude(
+        ".git/**/*",
+        "coverage/**/*",
+        "tmp/**/*",
+        "vendor/**/*"
+      )
+      @version_reference_mode = :older
     end
 
     ##
@@ -72,7 +100,10 @@ module Semverve
         gem_name: metadata.gem_name,
         module_name: metadata.module_name,
         root: expanded_root,
-        version_file: metadata.version_file
+        version_file: metadata.version_file,
+        version_code_reference_files: version_code_reference_files,
+        version_reference_files: version_reference_files,
+        version_reference_mode: normalized_version_reference_mode
       )
     end
 
@@ -90,6 +121,14 @@ module Semverve
     # @return [Symbol]
     def normalized_format
       format.to_sym
+    end
+
+    ##
+    # Configured version-reference mode normalized for lookup.
+    #
+    # @return [Symbol]
+    def normalized_version_reference_mode
+      version_reference_mode.to_sym
     end
   end
 
@@ -139,6 +178,24 @@ module Semverve
     attr_reader :version_file
 
     ##
+    # Resolved code files to scan for safe version literals.
+    #
+    # @return [Rake::FileList]
+    attr_reader :version_code_reference_files
+
+    ##
+    # Resolved files to scan for version references.
+    #
+    # @return [Rake::FileList]
+    attr_reader :version_reference_files
+
+    ##
+    # Resolved version-reference comparison mode.
+    #
+    # @return [Symbol]
+    attr_reader :version_reference_mode
+
+    ##
     # Initializes a resolved configuration.
     #
     # @param [Boolean] bundle_lock
@@ -148,9 +205,12 @@ module Semverve
     # @param [String] module_name
     # @param [String] root
     # @param [String] version_file
+    # @param [Rake::FileList] version_code_reference_files
+    # @param [Rake::FileList] version_reference_files
+    # @param [Symbol] version_reference_mode
     #
     # @return [Semverve::ResolvedConfiguration]
-    def initialize(bundle_lock:, command_runner:, format:, gem_name:, module_name:, root:, version_file:)
+    def initialize(bundle_lock:, command_runner:, format:, gem_name:, module_name:, root:, version_file:, version_code_reference_files:, version_reference_files:, version_reference_mode:)
       @bundle_lock = bundle_lock
       @command_runner = command_runner
       @format = format
@@ -158,6 +218,9 @@ module Semverve
       @module_name = module_name
       @root = root
       @version_file = version_file
+      @version_code_reference_files = version_code_reference_files
+      @version_reference_files = version_reference_files
+      @version_reference_mode = version_reference_mode
     end
 
     ##
