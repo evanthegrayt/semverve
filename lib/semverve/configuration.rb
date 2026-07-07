@@ -17,6 +17,12 @@ module Semverve
     VALID_VERSION_CHECKS = [:doc_references, :code_references, :metadata].freeze
 
     ##
+    # Release-readiness surfaces supported by release check tasks.
+    #
+    # @return [Array<Symbol>]
+    VALID_RELEASE_CHECKS = [:rubygems].freeze
+
+    ##
     # Default Ruby pattern for code version literals that are safe to rewrite.
     #
     # @return [Regexp]
@@ -59,10 +65,22 @@ module Semverve
     attr_reader :preset
 
     ##
+    # Release-readiness surfaces run by the release check task.
+    #
+    # @return [Array<Symbol, String>]
+    attr_reader :release_checks
+
+    ##
     # Project root used when inferring metadata and expanding paths.
     #
     # @return [String, nil]
     attr_reader :root
+
+    ##
+    # RubyGems-compatible host used for published-version checks.
+    #
+    # @return [String]
+    attr_accessor :rubygems_host
 
     ##
     # Explicit version-file path relative to the project root.
@@ -110,6 +128,7 @@ module Semverve
       @command_runner = ->(command) { system(command) }
       @format = :module
       @preset = nil
+      @rubygems_host = "https://rubygems.org"
       @version_code_reference_files = Rake::FileList[]
       self.version_code_reference_pattern = DEFAULT_VERSION_CODE_REFERENCE_PATTERN
       @version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
@@ -119,6 +138,7 @@ module Semverve
         "vendor/**/*"
       )
       @version_reference_mode = :older
+      self.release_checks = []
       self.version_checks = VALID_VERSION_CHECKS
     end
 
@@ -135,7 +155,9 @@ module Semverve
         format: normalized_format,
         gem_name: metadata.gem_name,
         module_name: metadata.module_name,
+        release_checks: normalized_release_checks,
         root: expanded_root,
+        rubygems_host: rubygems_host,
         version_file: metadata.version_file,
         version_checks: normalized_version_checks,
         version_code_reference_files: version_code_reference_files,
@@ -184,6 +206,16 @@ module Semverve
     def preset=(preset)
       @preset_defaults = nil
       @preset = preset.nil? ? nil : Presets.fetch(preset).name
+    end
+
+    ##
+    # Sets the release-readiness surfaces run by the release check task.
+    #
+    # @param [Array<Symbol, String>] checks
+    #
+    # @return [Array<Symbol>]
+    def release_checks=(checks)
+      @release_checks = normalize_release_checks(checks)
     end
 
     ##
@@ -244,6 +276,14 @@ module Semverve
     end
 
     ##
+    # Configured release checks normalized for lookup.
+    #
+    # @return [Array<Symbol>]
+    def normalized_release_checks
+      normalize_release_checks(release_checks)
+    end
+
+    ##
     # Resolved value for a configurable attribute before metadata inference.
     #
     # @param [Symbol] attribute
@@ -288,6 +328,22 @@ module Semverve
       valid_check_names = VALID_VERSION_CHECKS.map(&:inspect)
       valid_checks = "#{valid_check_names[0...-1].join(", ")}, or #{valid_check_names.last}"
       raise Error, "Unknown version check #{invalid_checks.map(&:inspect).join(", ")}. Use #{valid_checks}."
+    end
+
+    ##
+    # Normalizes and validates release checks.
+    #
+    # @param [Array<Symbol, String>] checks
+    #
+    # @return [Array<Symbol>]
+    def normalize_release_checks(checks)
+      normalized_checks = Array(checks).map do |check|
+        check.respond_to?(:to_sym) ? check.to_sym : check
+      end
+      return normalized_checks if normalized_checks.all? { |check| VALID_RELEASE_CHECKS.include?(check) }
+
+      invalid_checks = normalized_checks.reject { |check| VALID_RELEASE_CHECKS.include?(check) }
+      raise Error, "Unknown release check #{invalid_checks.map(&:inspect).join(", ")}. Use :rubygems."
     end
 
     ##
@@ -374,10 +430,22 @@ module Semverve
     attr_reader :module_name
 
     ##
+    # Resolved release-readiness surfaces run by the release check task.
+    #
+    # @return [Array<Symbol>]
+    attr_reader :release_checks
+
+    ##
     # Absolute project root.
     #
     # @return [String]
     attr_reader :root
+
+    ##
+    # Resolved RubyGems-compatible host used for published-version checks.
+    #
+    # @return [String]
+    attr_reader :rubygems_host
 
     ##
     # Resolved version-file path relative to the project root.
@@ -423,7 +491,9 @@ module Semverve
     # @param [Symbol] format
     # @param [String] gem_name
     # @param [String] module_name
+    # @param [Array<Symbol>] release_checks
     # @param [String] root
+    # @param [String] rubygems_host
     # @param [String] version_file
     # @param [Array<Symbol>] version_checks
     # @param [Rake::FileList] version_code_reference_files
@@ -438,7 +508,9 @@ module Semverve
       format:,
       gem_name:,
       module_name:,
+      release_checks:,
       root:,
+      rubygems_host:,
       version_file:,
       version_checks:,
       version_code_reference_files:,
@@ -451,7 +523,9 @@ module Semverve
       @format = format
       @gem_name = gem_name
       @module_name = module_name
+      @release_checks = release_checks
       @root = root
+      @rubygems_host = rubygems_host
       @version_file = version_file
       @version_checks = version_checks
       @version_code_reference_files = version_code_reference_files

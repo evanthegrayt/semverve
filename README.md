@@ -55,7 +55,7 @@ rake semverve:increment:patch
 rake semverve:increment:minor
 rake semverve:increment:major
 rake semverve:generate
-rake semverve:set VERSION=1.2.3
+rake 'semverve:set[1.2.3]'
 rake semverve:check
 rake semverve:fix
 rake semverve:check:references
@@ -64,6 +64,8 @@ rake semverve:check:code
 rake semverve:fix:code
 rake semverve:check:metadata
 rake semverve:fix:metadata
+rake semverve:check:rubygems
+rake semverve:check:release
 ```
 
 ## Configuration
@@ -89,6 +91,8 @@ Semverve.configure do |config|
   config.version_file = "lib/my_gem/version.rb"
   config.module_name = "MyGem"
   config.version_checks = [:doc_references, :code_references, :metadata]
+  config.release_checks = [:rubygems]
+  config.rubygems_host = "https://rubygems.org"
   config.version_code_reference_files.append("lib/**/*.rb")
   config.version_doc_reference_files.append("doc/**/*.md")
   config.version_reference_mode = :non_current
@@ -103,6 +107,8 @@ Semverve.configure do |config|
   config.bundle_lock = false
   config.root = Dir.pwd
   config.version_checks = [:doc_references, :code_references, :metadata]
+  config.release_checks = []
+  config.rubygems_host = "https://rubygems.org"
   config.version_reference_mode = :older
   config.version_code_reference_files = Rake::FileList[]
   config.version_code_reference_pattern =
@@ -119,6 +125,22 @@ end
 The empty `version_code_reference_files` default only applies to arbitrary code
 literal scanning. `rake semverve:check` still checks the resolved `.gemspec`
 version and matching `Gemfile.lock` entry through its default metadata check.
+Release checks are empty by default because they may make network requests and
+are intended for release pipelines rather than every local or pull-request run.
+
+Semverve tasks use Rake task arguments for values:
+
+```sh
+rake 'semverve:set[1.2.3]'
+rake 'semverve:generate[1.0.0,simple]'
+rake 'semverve:generate[force]'
+```
+
+Quote task invocations that include square brackets. Shells such as zsh may
+otherwise treat brackets as glob patterns before Rake sees them. Flag syntax
+such as `rake semverve:set --version 1.2.3` is not used because `--version` is
+already a Rake option; Semverve stays within Rake's native argument syntax
+instead.
 
 The gem name, module name, and version-file path are inferred by default:
 
@@ -227,13 +249,21 @@ rake semverve:generate
 Generate a specific version or format:
 
 ```sh
-rake semverve:generate VERSION=1.0.0 FORMAT=simple
+rake 'semverve:generate[1.0.0,simple]'
 ```
 
 Generation fails if the target file already exists. To replace it:
 
 ```sh
-rake semverve:generate FORCE=true
+rake 'semverve:generate[force]'
+```
+
+`semverve:generate` accepts optional `version` and `format` arguments. Add a
+`force` token to overwrite an existing version file:
+
+```sh
+rake 'semverve:generate[1.0.0,force]'
+rake 'semverve:generate[1.0.0,simple,force]'
 ```
 
 ## Incrementing
@@ -259,7 +289,7 @@ your gem's version in `Gemfile.lock`.
 Set an exact version without incrementing:
 
 ```sh
-rake semverve:set VERSION=1.2.3
+rake 'semverve:set[1.2.3]'
 ```
 
 Successful updates print the version change:
@@ -290,6 +320,9 @@ Run every version check with:
 ```sh
 rake semverve:check
 ```
+
+This task is designed for normal CI. It uses local project files, prints
+parseable findings, and exits non-zero when it finds drift.
 
 By default, this checks:
 
@@ -396,6 +429,13 @@ same line or the preceding nonblank line.
 This migration note intentionally mentions 1.0.0. <!-- semverve:ignore-version-reference -->
 ```
 
+Audit ignored references by setting `SEMVERVE_REPORT_IGNORED=true` when running
+check tasks:
+
+```sh
+SEMVERVE_REPORT_IGNORED=true rake semverve:check
+```
+
 ### Code version literals
 Code scanning is opt-in to avoid false positives. This is for arbitrary project
 code, not gem metadata. The default is:
@@ -428,6 +468,13 @@ Ruby code checks only obvious version assignments/constants, such as:
 APP_VERSION = "1.2.2"
 spec.version = "1.2.2"
 ```
+
+Ignore an intentional code literal with `semverve:ignore-version-reference` on
+the same line or the preceding nonblank line.
+
+Set `SEMVERVE_REPORT_IGNORED=true` with `semverve:check` or
+`semverve:check:code` to report ignored stale literals without changing
+`semverve:fix` behavior.
 
 The default pattern is Ruby-oriented. Semverve does not inspect file extensions
 or parse other languages for code literals; non-Ruby files are scanned as plain
@@ -501,6 +548,77 @@ end
 
 `rake semverve:fix:metadata` updates safe literal gemspec assignments and
 runs `bundle lock` when the lockfile has drifted.
+
+## Checking release readiness
+Release checks are separate from `rake semverve:check`. They are useful in CI,
+but they are meant for release workflows, tag builds, or pre-publish jobs rather
+than every pull request.
+
+Enable the RubyGems published-version check:
+
+```ruby
+Semverve.configure do |config|
+  config.release_checks = [:rubygems]
+end
+```
+
+Then run:
+
+```sh
+rake semverve:check:release
+```
+
+With `:rubygems` enabled, `semverve:check:release` asks the configured
+RubyGems-compatible host whether the current version already exists. If it does,
+the task exits non-zero with a message like:
+
+```text
+my_gem 1.2.3 already exists on https://rubygems.org.
+```
+
+If all configured release checks pass, it prints:
+
+```text
+Release checks passed.
+```
+
+You can also run the RubyGems check directly without changing
+`config.release_checks`:
+
+```sh
+rake semverve:check:rubygems
+```
+
+When the current version is not published, the focused task prints:
+
+```text
+my_gem 1.2.3 is not published on https://rubygems.org.
+```
+
+Use `config.rubygems_host` for a private RubyGems-compatible server:
+
+```ruby
+Semverve.configure do |config|
+  config.release_checks = [:rubygems]
+  config.rubygems_host = "https://gems.example.com"
+end
+```
+
+The published-version check treats a missing gem as unpublished. It fails closed
+on registry errors, malformed responses, and network failures because release
+pipelines should not silently publish after an inconclusive preflight.
+
+For ordinary CI, keep using the local checks:
+
+```sh
+bundle exec rake test semverve:check
+```
+
+For release CI, run the release check before building or pushing:
+
+```sh
+bundle exec rake semverve:check:release build
+```
 
 ## Reporting Bugs and Requesting Features
 If you have an idea or find a bug, please [create an

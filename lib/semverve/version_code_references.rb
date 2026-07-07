@@ -9,6 +9,12 @@ module Semverve
   # Finds and updates safe version literals in configured code files.
   class VersionCodeReferences
     ##
+    # Marker that suppresses version-reference findings.
+    #
+    # @return [String]
+    IGNORE_MARKER = "semverve:ignore-version-reference"
+
+    ##
     # Ruby assignments that are safe enough to rewrite automatically.
     #
     # @return [Regexp]
@@ -93,9 +99,10 @@ module Semverve
     # @param [Semverve::SemanticVersion] current_version
     #
     # @return [Semverve::VersionCodeReferences]
-    def initialize(configuration, current_version)
+    def initialize(configuration, current_version, include_ignored: false)
       @configuration = configuration
       @current_version = current_version
+      @include_ignored = include_ignored
     end
 
     ##
@@ -143,6 +150,12 @@ module Semverve
     attr_reader :current_version
 
     ##
+    # Whether ignored code literals should be included in findings.
+    #
+    # @return [Boolean]
+    attr_reader :include_ignored
+
+    ##
     # Absolute configured project root.
     #
     # @return [String]
@@ -176,7 +189,11 @@ module Semverve
     #
     # @return [Array<Semverve::VersionCodeReferences::Finding>]
     def findings_for_file(path)
-      File.readlines(path).filter_map.with_index(1) do |line, line_number|
+      lines = File.readlines(path)
+
+      lines.filter_map.with_index(1) do |line, line_number|
+        next if !include_ignored && ignored_line?(line_number, lines)
+
         match = line.match(pattern)
         next unless match
 
@@ -200,8 +217,11 @@ module Semverve
     # @return [Array(String, Integer)]
     def fixed_content(content)
       replacement_count = 0
+      lines = content.lines
 
-      fixed = content.lines.map do |line|
+      fixed = lines.map.with_index(1) do |line, line_number|
+        next line if ignored_line?(line_number, lines)
+
         match = line.match(pattern)
         next line unless match
 
@@ -213,6 +233,23 @@ module Semverve
       end.join
 
       [fixed, replacement_count]
+    end
+
+    ##
+    # Whether findings on a line should be ignored.
+    #
+    # @param [Integer] line_number
+    # @param [Array<String>] lines
+    #
+    # @return [Boolean]
+    def ignored_line?(line_number, lines)
+      return true if lines.fetch(line_number - 1).include?(IGNORE_MARKER)
+
+      # Ruby 3.2 and 3.3 do not support Array#rfind.
+      # rubocop:disable Style/ReverseFind
+      previous_nonblank_line = lines[0...(line_number - 1)].reverse_each.find { |candidate| !candidate.strip.empty? }
+      # rubocop:enable Style/ReverseFind
+      previous_nonblank_line&.include?(IGNORE_MARKER)
     end
 
     ##

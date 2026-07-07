@@ -4,6 +4,7 @@ require "rake"
 
 require_relative "../semverve"
 require_relative "generator"
+require_relative "published_version"
 require_relative "semantic_version"
 require_relative "version_file"
 require_relative "version_code_references"
@@ -98,13 +99,19 @@ module Semverve
         end
 
         desc "Generate a version.rb file"
-        task :generate do
-          puts "Generated #{Generator.new(Semverve.configuration.resolved).generate}"
+        task :generate, [:version, :format, :force] do |_task, args|
+          generator_options = generate_options(args)
+          puts "Generated #{Generator.new(
+            Semverve.configuration.resolved,
+            version: generator_options[:version],
+            format: generator_options[:format],
+            force: generator_options[:force]
+          ).generate}"
         end
 
-        desc "Set the version.rb file to VERSION"
-        task :set do
-          set
+        desc "Set the version.rb file to version"
+        task :set, [:version] do |_task, args|
+          set(args)
         end
 
         desc "Check version references, code literals, and metadata"
@@ -126,6 +133,16 @@ module Semverve
           desc "Check gem metadata for version mismatches"
           task :metadata do
             check_metadata
+          end
+
+          desc "Check whether the current gem version is already published"
+          task :rubygems do
+            check_rubygems
+          end
+
+          desc "Check configured release-readiness surfaces"
+          task :release do
+            check_release
           end
         end
 
@@ -169,14 +186,14 @@ module Semverve
     end
 
     ##
-    # Sets the version to the value from the +VERSION+ environment variable.
+    # Sets the version to the value from the Rake +version+ argument.
+    #
+    # @param [Rake::TaskArguments] args
     #
     # @return [void]
-    def set
+    def set(args)
       configuration = Semverve.configuration.resolved
-      requested_version = SemanticVersion.parse(
-        ENV.fetch("VERSION") { raise Error, "Set VERSION=MAJOR.MINOR.PATCH." }
-      )
+      requested_version = SemanticVersion.parse(requested_version_argument(args))
       update = VersionFile.new(configuration).set(requested_version)
 
       report(update, configuration)
@@ -211,7 +228,7 @@ module Semverve
     def check_references
       configuration, current_version = check_context
       report_findings(
-        [["version reference", VersionReferences.new(configuration, current_version).findings]],
+        [["version reference", VersionReferences.new(configuration, current_version, include_ignored: report_ignored?).findings]],
         current_version,
         clean_message: "Version references are current."
       )
@@ -236,7 +253,7 @@ module Semverve
     def check_code
       configuration, current_version = check_context
       report_findings(
-        [["code version literal", VersionCodeReferences.new(configuration, current_version).findings]],
+        [["code version literal", VersionCodeReferences.new(configuration, current_version, include_ignored: report_ignored?).findings]],
         current_version,
         clean_message: "Code version literals are current."
       )
@@ -265,6 +282,31 @@ module Semverve
         current_version,
         clean_message: "Version metadata is current."
       )
+    end
+
+    ##
+    # Checks whether the current gem version is already published.
+    #
+    # @return [void]
+    def check_rubygems
+      configuration, current_version = check_context
+      PublishedVersion.new(configuration, current_version).check
+
+      puts "#{configuration.gem_name} #{current_version} is not published on #{configuration.rubygems_host}."
+    end
+
+    ##
+    # Checks configured release-readiness surfaces.
+    #
+    # @return [void]
+    def check_release
+      configuration, current_version = check_context
+
+      if configuration.release_checks.include?(:rubygems)
+        PublishedVersion.new(configuration, current_version).check
+      end
+
+      puts "Release checks passed."
     end
 
     ##
@@ -298,15 +340,56 @@ module Semverve
     def check_groups(configuration, current_version)
       groups = []
       if configuration.version_checks.include?(:doc_references)
-        groups << ["version reference", VersionReferences.new(configuration, current_version).findings]
+        groups << ["version reference", VersionReferences.new(configuration, current_version, include_ignored: report_ignored?).findings]
       end
       if configuration.version_checks.include?(:code_references)
-        groups << ["code version literal", VersionCodeReferences.new(configuration, current_version).findings]
+        groups << ["code version literal", VersionCodeReferences.new(configuration, current_version, include_ignored: report_ignored?).findings]
       end
       if configuration.version_checks.include?(:metadata)
         groups << [nil, VersionMetadata.new(configuration, current_version).findings]
       end
       groups
+    end
+
+    ##
+    # Whether check tasks should report references hidden by ignore markers.
+    #
+    # @return [Boolean]
+    def report_ignored?
+      ENV.fetch("SEMVERVE_REPORT_IGNORED", "false").match?(/\A(true|1|yes)\z/i)
+    end
+
+    ##
+    # Parsed arguments for +semverve:generate+.
+    #
+    # @param [Rake::TaskArguments] args
+    #
+    # @return [Hash]
+    def generate_options(args)
+      values = args.to_a
+      force = values.delete("force")
+      if values.length > 2
+        raise Error, "Run rake 'semverve:generate[VERSION,FORMAT,force]'."
+      end
+
+      {
+        version: values[0],
+        format: values[1],
+        force: !force.nil?
+      }
+    end
+
+    ##
+    # Required version argument for +semverve:set+.
+    #
+    # @param [Rake::TaskArguments] args
+    #
+    # @return [String]
+    def requested_version_argument(args)
+      version = args[:version]
+      raise Error, "Run rake 'semverve:set[MAJOR.MINOR.PATCH]'." if version.nil? || version.empty?
+
+      version
     end
 
     ##
