@@ -115,19 +115,19 @@ module Semverve
         end
 
         desc "Check version references, code literals, and metadata"
-        task :check do
-          check
+        task :check, [:version] do |_task, args|
+          check(args)
         end
 
         namespace :check do
           desc "Check configured files for stale version references"
-          task :references do
-            check_references
+          task :references, [:version] do |_task, args|
+            check_references(args)
           end
 
           desc "Check configured code files for version literals"
-          task :code do
-            check_code
+          task :code, [:version] do |_task, args|
+            check_code(args)
           end
 
           desc "Check gem metadata for version mismatches"
@@ -147,19 +147,19 @@ module Semverve
         end
 
         desc "Fix version references, code literals, and metadata"
-        task :fix do
-          fix
+        task :fix, [:version] do |_task, args|
+          fix(args)
         end
 
         namespace :fix do
           desc "Replace stale version references in configured files"
-          task :references do
-            fix_references
+          task :references, [:version] do |_task, args|
+            fix_references(args)
           end
 
           desc "Replace safe code version literals in configured files"
-          task :code do
-            fix_code
+          task :code, [:version] do |_task, args|
+            fix_code(args)
           end
 
           desc "Fix safe gem metadata version mismatches"
@@ -203,11 +203,14 @@ module Semverve
     # Checks all version-maintenance surfaces.
     #
     # @return [void]
-    def check
+    def check(args = nil)
       configuration, current_version = check_context
+      target_version = target_version_argument(args, "semverve:check")
       report_findings(
-        check_groups(configuration, current_version),
+        check_groups(configuration, current_version, target_version),
         current_version,
+        target_version: target_version,
+        fix_task_name: "semverve:fix",
         clean_message: "Version checks passed."
       )
     end
@@ -216,20 +219,34 @@ module Semverve
     # Fixes all check surfaces.
     #
     # @return [void]
-    def fix
+    def fix(args = nil)
       configuration, current_version = check_context
-      report_fix_results(fix_results(configuration, current_version))
+      target_version = target_version_argument(args, "semverve:fix")
+      return report_current_target_noop(target_version) if target_version == current_version
+
+      report_fix_results(fix_results(configuration, current_version, target_version))
     end
 
     ##
     # Checks configured files for stale version references.
     #
     # @return [void]
-    def check_references
+    def check_references(args = nil)
       configuration, current_version = check_context
+      target_version = target_version_argument(args, "semverve:check:references")
       report_findings(
-        [["version reference", VersionReferences.new(configuration, current_version, include_ignored: report_ignored?).findings]],
+        [[
+          "version reference",
+          VersionReferences.new(
+            configuration,
+            current_version,
+            include_ignored: report_ignored?,
+            target_version: target_version
+          ).findings
+        ]],
         current_version,
+        target_version: target_version,
+        fix_task_name: "semverve:fix:references",
         clean_message: "Version references are current."
       )
     end
@@ -238,10 +255,16 @@ module Semverve
     # Replaces stale version references in configured files.
     #
     # @return [void]
-    def fix_references
+    def fix_references(args = nil)
       configuration, current_version = check_context
+      target_version = target_version_argument(args, "semverve:fix:references")
+      return report_current_target_noop(target_version) if target_version == current_version
+
       report_fix_results(
-        [["version reference", VersionReferences.new(configuration, current_version).fix]],
+        [[
+          "version reference",
+          VersionReferences.new(configuration, current_version, target_version: target_version).fix
+        ]],
         clean_message: "Version references are current."
       )
     end
@@ -250,11 +273,22 @@ module Semverve
     # Checks configured code files for version literals.
     #
     # @return [void]
-    def check_code
+    def check_code(args = nil)
       configuration, current_version = check_context
+      target_version = target_version_argument(args, "semverve:check:code")
       report_findings(
-        [["code version literal", VersionCodeReferences.new(configuration, current_version, include_ignored: report_ignored?).findings]],
+        [[
+          "code version literal",
+          VersionCodeReferences.new(
+            configuration,
+            current_version,
+            include_ignored: report_ignored?,
+            target_version: target_version
+          ).findings
+        ]],
         current_version,
+        target_version: target_version,
+        fix_task_name: "semverve:fix:code",
         clean_message: "Code version literals are current."
       )
     end
@@ -263,10 +297,16 @@ module Semverve
     # Replaces safe code version literals in configured files.
     #
     # @return [void]
-    def fix_code
+    def fix_code(args = nil)
       configuration, current_version = check_context
+      target_version = target_version_argument(args, "semverve:fix:code")
+      return report_current_target_noop(target_version) if target_version == current_version
+
       report_fix_results(
-        [["code version literal", VersionCodeReferences.new(configuration, current_version).fix]],
+        [[
+          "code version literal",
+          VersionCodeReferences.new(configuration, current_version, target_version: target_version).fix
+        ]],
         clean_message: "Code version literals are current."
       )
     end
@@ -336,14 +376,32 @@ module Semverve
     # @param [Semverve::ResolvedConfiguration] configuration
     # @param [Semverve::SemanticVersion] current_version
     #
+    # @param [Semverve::SemanticVersion, nil] target_version
+    #
     # @return [Array<Array(String, Array)>]
-    def check_groups(configuration, current_version)
+    def check_groups(configuration, current_version, target_version = nil)
       groups = []
       if configuration.version_checks.include?(:doc_references)
-        groups << ["version reference", VersionReferences.new(configuration, current_version, include_ignored: report_ignored?).findings]
+        groups << [
+          "version reference",
+          VersionReferences.new(
+            configuration,
+            current_version,
+            include_ignored: report_ignored?,
+            target_version: target_version
+          ).findings
+        ]
       end
       if configuration.version_checks.include?(:code_references)
-        groups << ["code version literal", VersionCodeReferences.new(configuration, current_version, include_ignored: report_ignored?).findings]
+        groups << [
+          "code version literal",
+          VersionCodeReferences.new(
+            configuration,
+            current_version,
+            include_ignored: report_ignored?,
+            target_version: target_version
+          ).findings
+        ]
       end
       if configuration.version_checks.include?(:metadata)
         groups << [nil, VersionMetadata.new(configuration, current_version).findings]
@@ -413,19 +471,42 @@ module Semverve
     end
 
     ##
+    # Optional exact version argument for check and fix tasks.
+    #
+    # @param [Rake::TaskArguments, nil] args
+    # @param [String] task_name
+    #
+    # @return [Semverve::SemanticVersion, nil]
+    def target_version_argument(args, task_name)
+      version = args&.[](:version)
+      return nil if version.nil? || version.empty?
+
+      SemanticVersion.parse(version)
+    rescue Error
+      raise Error, "Run rake '#{task_name}[MAJOR.MINOR.PATCH]'."
+    end
+
+    ##
     # Fix results enabled for the umbrella fix task.
     #
     # @param [Semverve::ResolvedConfiguration] configuration
     # @param [Semverve::SemanticVersion] current_version
+    # @param [Semverve::SemanticVersion, nil] target_version
     #
     # @return [Array<Array(String, #replacement_count, #changed_files)>]
-    def fix_results(configuration, current_version)
+    def fix_results(configuration, current_version, target_version = nil)
       results = []
       if configuration.version_checks.include?(:doc_references)
-        results << ["version reference", VersionReferences.new(configuration, current_version).fix]
+        results << [
+          "version reference",
+          VersionReferences.new(configuration, current_version, target_version: target_version).fix
+        ]
       end
       if configuration.version_checks.include?(:code_references)
-        results << ["code version literal", VersionCodeReferences.new(configuration, current_version).fix]
+        results << [
+          "code version literal",
+          VersionCodeReferences.new(configuration, current_version, target_version: target_version).fix
+        ]
       end
       if configuration.version_checks.include?(:metadata)
         results << ["metadata version", VersionMetadata.new(configuration, current_version).fix]
@@ -438,10 +519,12 @@ module Semverve
     #
     # @param [Array<Array(String, Array)>] groups
     # @param [Semverve::SemanticVersion] current_version
+    # @param [Semverve::SemanticVersion, nil] target_version
+    # @param [String, nil] fix_task_name
     # @param [String] clean_message
     #
     # @return [void]
-    def report_findings(groups, current_version, clean_message:)
+    def report_findings(groups, current_version, clean_message:, target_version: nil, fix_task_name: nil)
       findings = groups.flat_map do |(label, group_findings)|
         group_findings.map { |finding| [label || finding.label, finding] }
       end
@@ -454,9 +537,34 @@ module Semverve
       findings.each do |(label, finding)|
         puts "#{finding.path}:#{finding.line}:#{finding.column}: #{label} #{finding.version} -> #{current_version}"
       end
+      if target_version == current_version && fix_task_name && reference_or_code_findings?(findings)
+        puts "Target version #{target_version} is already current; #{fix_task_name}[#{target_version}] will not change these references."
+      end
 
       issue = findings.one? ? "issue" : "issues"
       raise Error, "Found #{findings.count} version check #{issue}."
+    end
+
+    ##
+    # Prints a no-op message for exact fix requests targeting the current version.
+    #
+    # @param [Semverve::SemanticVersion, nil] target_version
+    #
+    # @return [void]
+    def report_current_target_noop(target_version)
+      puts "Target version #{target_version} is already current; nothing to fix."
+    end
+
+    ##
+    # Whether findings include references controlled by exact-target fixes.
+    #
+    # @param [Array<Array(String, Object)>] findings
+    #
+    # @return [Boolean]
+    def reference_or_code_findings?(findings)
+      findings.any? do |(label, _finding)|
+        ["version reference", "code version literal"].include?(label)
+      end
     end
 
     ##

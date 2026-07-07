@@ -195,6 +195,19 @@ module Semverve
       end
     end
 
+    def test_check_target_fails_with_invalid_version
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        error = assert_raise(Error) { Rake::Task["semverve:check"].invoke("nope") }
+
+        assert_equal "Run rake 'semverve:check[MAJOR.MINOR.PATCH]'.", error.message
+      end
+    end
+
     def test_set_lower_version_warns_and_updates
       in_project do
         write_gemspec("my_gem")
@@ -772,7 +785,7 @@ module Semverve
         write_file("README.md", "Old 2.0.0, current 2.0.1, future 2.0.2.\n")
 
         Task.new do |config|
-          config.version_reference_mode = :non_current
+          config.version_match_mode = :non_current
         end
 
         stdout, = capture_error(Error) { Rake::Task["semverve:check:references"].invoke }
@@ -780,6 +793,39 @@ module Semverve
         assert_match(/README\.md:1:5: version reference 2\.0\.0 -> 2\.0\.1/, stdout)
         assert_match(/README\.md:1:34: version reference 2\.0\.2 -> 2\.0\.1/, stdout)
         assert_no_match(/current 2\.0\.1 -> 2\.0\.1/, stdout)
+      end
+    end
+
+    def test_check_can_target_exact_version_references
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Old 2.0.0, current 2.0.1, future 2.0.2.\n")
+
+        Task.new
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:references"].invoke("2.0.2") }
+
+        assert_no_match(/2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_match(/README\.md:1:34: version reference 2\.0\.2 -> 2\.0\.1/, stdout)
+        assert_no_match(/current 2\.0\.1 -> 2\.0\.1/, stdout)
+      end
+    end
+
+    def test_check_target_version_overrides_non_current_mode
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Old 2.0.0, current 2.0.1, future 2.0.2.\n")
+
+        Task.new do |config|
+          config.version_match_mode = :non_current
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:references"].invoke("2.0.0") }
+
+        assert_match(/README\.md:1:5: version reference 2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_no_match(/2\.0\.2 -> 2\.0\.1/, stdout)
       end
     end
 
@@ -828,6 +874,22 @@ module Semverve
       end
     end
 
+    def test_check_fix_replaces_only_targeted_version_references
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        readme_path = write_file("README.md", "Old 1.9.9, target 2.0.0, future 2.0.2.\n")
+
+        Task.new
+
+        stdout = capture_stdout { Rake::Task["semverve:fix:references"].invoke("2.0.0") }
+
+        assert_match(/Updated README\.md/, stdout)
+        assert_match(/Replaced 1 version reference\./, stdout)
+        assert_equal "Old 1.9.9, target 2.0.1, future 2.0.2.\n", File.read(readme_path)
+      end
+    end
+
     def test_check_fix_reports_clean_doc_reference_files
       in_project do
         write_gemspec("my_gem")
@@ -837,6 +899,47 @@ module Semverve
         Task.new
 
         assert_equal "Version references are current.\n", capture_stdout { Rake::Task["semverve:fix:references"].invoke }
+      end
+    end
+
+    def test_check_current_target_reports_references_with_no_fix_note
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Install version 2.0.1.\n")
+
+        Task.new
+
+        stdout, _stderr, error = capture_error(Error) { Rake::Task["semverve:check:references"].invoke("2.0.1") }
+
+        assert_match(/README\.md:1:17: version reference 2\.0\.1 -> 2\.0\.1/, stdout)
+        assert_match(
+          /Target version 2\.0\.1 is already current; semverve:fix:references\[2\.0\.1\] will not change these references\./,
+          stdout
+        )
+        assert_equal "Found 1 version check issue.", error.message
+      end
+    end
+
+    def test_fix_current_target_is_noop
+      commands = []
+
+      in_project do
+        gemspec_path = write_gemspec("my_gem", version: "2.0.0")
+        write_module_version("MyGem", "2.0.1")
+        readme_path = write_file("README.md", "Install version 2.0.1.\n")
+        write_lockfile("my_gem", "2.0.0")
+
+        Task.new do |config|
+          config.command_runner = ->(command) { commands << command }
+        end
+
+        stdout = capture_stdout { Rake::Task["semverve:fix"].invoke("2.0.1") }
+
+        assert_equal "Target version 2.0.1 is already current; nothing to fix.\n", stdout
+        assert_equal "Install version 2.0.1.\n", File.read(readme_path)
+        assert_match(/spec.version = "2\.0\.0"/, File.read(gemspec_path))
+        assert_empty commands
       end
     end
 
@@ -917,6 +1020,7 @@ module Semverve
         write_module_version("MyGem", "2.0.1")
         write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
           APP_VERSION = "2.0.0"
+          FUTURE_VERSION = "2.0.2"
           EXAMPLE = "1.0.0"
         RUBY
 
@@ -927,7 +1031,51 @@ module Semverve
         stdout, = capture_error(Error) { Rake::Task["semverve:check:code"].invoke }
 
         assert_match(%r{lib/my_gem/constants\.rb:1:16: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+        assert_no_match(/2\.0\.2 -> 2\.0\.1/, stdout)
         assert_no_match(/1\.0\.0/, stdout)
+      end
+    end
+
+    def test_check_code_can_report_non_current_version_literals
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          APP_VERSION = "2.0.0"
+          CURRENT_VERSION = "2.0.1"
+          FUTURE_VERSION = "2.0.2"
+        RUBY
+
+        Task.new do |config|
+          config.version_match_mode = :non_current
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:code"].invoke }
+
+        assert_match(%r{lib/my_gem/constants\.rb:1:16: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+        assert_match(%r{lib/my_gem/constants\.rb:3:19: code version literal 2\.0\.2 -> 2\.0\.1}, stdout)
+        assert_no_match(/CURRENT_VERSION/, stdout)
+      end
+    end
+
+    def test_check_code_can_target_exact_version_literals
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          APP_VERSION = "2.0.0"
+          FUTURE_VERSION = "2.0.2"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:code"].invoke("2.0.2") }
+
+        assert_no_match(/2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_match(%r{lib/my_gem/constants\.rb:2:19: code version literal 2\.0\.2 -> 2\.0\.1}, stdout)
       end
     end
 
@@ -950,6 +1098,31 @@ module Semverve
         assert_match(/Replaced 1 code version literal\./, stdout)
         assert_match(/APP_VERSION = "2\.0\.1"/, File.read(path))
         assert_match(/EXAMPLE = "1\.0\.0"/, File.read(path))
+      end
+    end
+
+    def test_check_code_fix_replaces_only_targeted_version_literals
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        path = write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          OLD_VERSION = "1.9.9"
+          APP_VERSION = "2.0.0"
+          FUTURE_VERSION = "2.0.2"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        stdout = capture_stdout { Rake::Task["semverve:fix:code"].invoke("2.0.0") }
+        content = File.read(path)
+
+        assert_match(%r{Updated lib/my_gem/constants\.rb}, stdout)
+        assert_match(/Replaced 1 code version literal\./, stdout)
+        assert_match(/OLD_VERSION = "1\.9\.9"/, content)
+        assert_match(/APP_VERSION = "2\.0\.1"/, content)
+        assert_match(/FUTURE_VERSION = "2\.0\.2"/, content)
       end
     end
 
@@ -1187,6 +1360,30 @@ module Semverve
         assert_match(/README\.md:1:17: version reference 2\.0\.0 -> 2\.0\.1/, stdout)
         assert_match(%r{lib/my_gem/constants\.rb:1:16: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
         assert_match(/my_gem\.gemspec:\d+:\d+: gemspec version 2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_equal "Found 3 version check issues.", error.message
+      end
+    end
+
+    def test_check_target_filters_references_and_code_but_not_metadata
+      in_project do
+        write_gemspec("my_gem", version: "2.0.0")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Target 1.9.9, old 1.0.0.\n")
+        write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          TARGET_VERSION = "1.9.9"
+          OLD_VERSION = "1.0.0"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        stdout, _stderr, error = capture_error(Error) { Rake::Task["semverve:check"].invoke("1.9.9") }
+
+        assert_match(/README\.md:1:8: version reference 1\.9\.9 -> 2\.0\.1/, stdout)
+        assert_match(%r{lib/my_gem/constants\.rb:1:19: code version literal 1\.9\.9 -> 2\.0\.1}, stdout)
+        assert_match(/my_gem\.gemspec:\d+:\d+: gemspec version 2\.0\.0 -> 2\.0\.1/, stdout)
+        assert_no_match(/1\.0\.0 -> 2\.0\.1/, stdout)
         assert_equal "Found 3 version check issues.", error.message
       end
     end

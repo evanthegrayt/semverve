@@ -116,6 +116,10 @@ versions as the generated version, `module` or `simple` as the format, and
 `rake 'semverve:generate[simple]'` and `rake 'semverve:generate[force]'`
 readable without requiring awkward empty slots.
 
+Use Rake task arguments for one-off exact inputs, such as
+`rake 'semverve:check[1.2.3]'` when a user wants to scan only for a specific
+version.
+
 Reserve environment variables for cross-cutting runtime toggles that compose
 across related tasks, such as `SEMVERVE_REPORT_IGNORED=true rake
 semverve:check`. Avoid generic environment variables like `VERSION`, `FORMAT`,

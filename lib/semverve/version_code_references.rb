@@ -99,10 +99,11 @@ module Semverve
     # @param [Semverve::SemanticVersion] current_version
     #
     # @return [Semverve::VersionCodeReferences]
-    def initialize(configuration, current_version, include_ignored: false)
+    def initialize(configuration, current_version, include_ignored: false, target_version: nil)
       @configuration = configuration
       @current_version = current_version
       @include_ignored = include_ignored
+      @target_version = target_version
     end
 
     ##
@@ -156,6 +157,12 @@ module Semverve
     attr_reader :include_ignored
 
     ##
+    # Exact version to match, when supplied by the task invocation.
+    #
+    # @return [Semverve::SemanticVersion, nil]
+    attr_reader :target_version
+
+    ##
     # Absolute configured project root.
     #
     # @return [String]
@@ -198,7 +205,7 @@ module Semverve
         next unless match
 
         version = SemanticVersion.parse(match[:version])
-        next if version == current_version
+        next unless report?(version)
 
         Finding.new(
           path: relative_path(path),
@@ -226,7 +233,7 @@ module Semverve
         next line unless match
 
         version = SemanticVersion.parse(match[:version])
-        next line if version == current_version
+        next line unless report?(version)
 
         replacement_count += 1
         replace_matched_version(line)
@@ -250,6 +257,25 @@ module Semverve
       previous_nonblank_line = lines[0...(line_number - 1)].reverse_each.find { |candidate| !candidate.strip.empty? }
       # rubocop:enable Style/ReverseFind
       previous_nonblank_line&.include?(IGNORE_MARKER)
+    end
+
+    ##
+    # Whether a referenced version should be reported or fixed.
+    #
+    # @param [Semverve::SemanticVersion] version
+    #
+    # @return [Boolean]
+    def report?(version)
+      return version == target_version if target_version
+
+      case configuration.version_match_mode
+      when :older
+        version < current_version
+      when :non_current
+        version != current_version
+      else
+        raise Error, "Unknown version match mode #{configuration.version_match_mode.inspect}. Use :older or :non_current."
+      end
     end
 
     ##

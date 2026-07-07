@@ -113,10 +113,10 @@ module Semverve
     attr_reader :version_checks
 
     ##
-    # Version-reference comparison mode.
+    # Version matching mode for reference and code-literal checks.
     #
     # @return [Symbol, String]
-    attr_accessor :version_reference_mode
+    attr_accessor :version_match_mode
 
     ##
     # Initializes configuration with Semverve's default settings.
@@ -137,7 +137,7 @@ module Semverve
         "tmp/**/*",
         "vendor/**/*"
       )
-      @version_reference_mode = :older
+      @version_match_mode = :older
       self.release_checks = []
       self.version_checks = VALID_VERSION_CHECKS
     end
@@ -163,7 +163,7 @@ module Semverve
         version_code_reference_files: version_code_reference_files,
         version_code_reference_pattern: version_code_reference_pattern,
         version_doc_reference_files: version_doc_reference_files,
-        version_reference_mode: normalized_version_reference_mode
+        version_match_mode: normalized_version_match_mode
       )
     end
 
@@ -305,11 +305,11 @@ module Semverve
     end
 
     ##
-    # Configured version-reference mode normalized for lookup.
+    # Configured version matching mode normalized for lookup.
     #
     # @return [Symbol]
-    def normalized_version_reference_mode
-      version_reference_mode.to_sym
+    def normalized_version_match_mode
+      version_match_mode.to_sym
     end
 
     ##
@@ -478,10 +478,10 @@ module Semverve
     attr_reader :version_doc_reference_files
 
     ##
-    # Resolved version-reference comparison mode.
+    # Resolved version matching mode for reference and code-literal checks.
     #
     # @return [Symbol]
-    attr_reader :version_reference_mode
+    attr_reader :version_match_mode
 
     ##
     # Initializes a resolved configuration.
@@ -499,7 +499,7 @@ module Semverve
     # @param [Rake::FileList] version_code_reference_files
     # @param [Regexp] version_code_reference_pattern
     # @param [Rake::FileList] version_doc_reference_files
-    # @param [Symbol] version_reference_mode
+    # @param [Symbol] version_match_mode
     #
     # @return [Semverve::ResolvedConfiguration]
     def initialize(
@@ -516,7 +516,7 @@ module Semverve
       version_code_reference_files:,
       version_code_reference_pattern:,
       version_doc_reference_files:,
-      version_reference_mode:
+      version_match_mode:
     )
       @bundle_lock = bundle_lock
       @command_runner = command_runner
@@ -531,7 +531,7 @@ module Semverve
       @version_code_reference_files = version_code_reference_files
       @version_code_reference_pattern = version_code_reference_pattern
       @version_doc_reference_files = version_doc_reference_files
-      @version_reference_mode = version_reference_mode
+      @version_match_mode = version_match_mode
     end
 
     ##

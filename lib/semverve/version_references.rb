@@ -107,10 +107,11 @@ module Semverve
     # @param [Semverve::SemanticVersion] current_version
     #
     # @return [Semverve::VersionReferences]
-    def initialize(configuration, current_version, include_ignored: false)
+    def initialize(configuration, current_version, include_ignored: false, target_version: nil)
       @configuration = configuration
       @current_version = current_version
       @include_ignored = include_ignored
+      @target_version = target_version
     end
 
     ##
@@ -162,6 +163,12 @@ module Semverve
     #
     # @return [Boolean]
     attr_reader :include_ignored
+
+    ##
+    # Exact version to match, when supplied by the task invocation.
+    #
+    # @return [Semverve::SemanticVersion, nil]
+    attr_reader :target_version
 
     ##
     # Absolute configured project root.
@@ -377,13 +384,15 @@ module Semverve
     #
     # @return [Boolean]
     def report?(version)
-      case configuration.version_reference_mode
+      return version == target_version if target_version
+
+      case configuration.version_match_mode
       when :older
         version < current_version
       when :non_current
         version != current_version
       else
-        raise Error, "Unknown version reference mode #{configuration.version_reference_mode.inspect}. Use :older or :non_current."
+        raise Error, "Unknown version match mode #{configuration.version_match_mode.inspect}. Use :older or :non_current."
       end
     end
 

@@ -9,6 +9,7 @@ module Semverve
 
     def test_version_exists_and_follows_semantic_versioning
       assert Semverve::VERSION
+      assert_equal "0.3.0", Semverve::VERSION
       assert_match Semverve::Version.to_s, Semverve::VERSION
     end
 
