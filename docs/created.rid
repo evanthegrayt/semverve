@@ -1,7 +1,7 @@
-Mon, 06 Jul 2026 14:30:49 -0500
-README.md	Mon, 06 Jul 2026 14:29:19 -0500
+Mon, 06 Jul 2026 22:07:29 -0500
+README.md	Mon, 06 Jul 2026 22:07:20 -0500
 lib/semverve.rb	Mon, 06 Jul 2026 13:54:18 -0500
-lib/semverve/configuration.rb	Mon, 06 Jul 2026 13:54:18 -0500
+lib/semverve/configuration.rb	Mon, 06 Jul 2026 22:07:20 -0500
 lib/semverve/docs_publisher.rb	Mon, 06 Jul 2026 13:54:18 -0500
 lib/semverve/docs_publisher/task.rb	Mon, 06 Jul 2026 13:54:18 -0500
 lib/semverve/error.rb	Sun, 05 Jul 2026 19:12:25 -0500
@@ -9,14 +9,15 @@ lib/semverve/file_list_resolver.rb	Sun, 05 Jul 2026 22:04:52 -0500
 lib/semverve/formats.rb	Sun, 05 Jul 2026 19:12:25 -0500
 lib/semverve/formats/module_constants.rb	Sun, 05 Jul 2026 19:12:25 -0500
 lib/semverve/formats/simple_string.rb	Sun, 05 Jul 2026 19:12:25 -0500
-lib/semverve/generator.rb	Sun, 05 Jul 2026 19:12:25 -0500
+lib/semverve/generator.rb	Mon, 06 Jul 2026 22:07:20 -0500
 lib/semverve/presets.rb	Mon, 06 Jul 2026 13:54:18 -0500
 lib/semverve/project_metadata.rb	Mon, 06 Jul 2026 13:54:18 -0500
+lib/semverve/published_version.rb	Mon, 06 Jul 2026 22:07:20 -0500
 lib/semverve/railtie.rb	Mon, 06 Jul 2026 13:54:18 -0500
 lib/semverve/semantic_version.rb	Sun, 05 Jul 2026 22:04:52 -0500
-lib/semverve/task.rb	Sun, 05 Jul 2026 22:04:52 -0500
-lib/semverve/version.rb	Sun, 05 Jul 2026 18:44:18 -0500
-lib/semverve/version_code_references.rb	Mon, 06 Jul 2026 13:54:18 -0500
+lib/semverve/task.rb	Mon, 06 Jul 2026 22:07:20 -0500
+lib/semverve/version.rb	Mon, 06 Jul 2026 22:07:20 -0500
+lib/semverve/version_code_references.rb	Mon, 06 Jul 2026 22:07:20 -0500
 lib/semverve/version_file.rb	Sun, 05 Jul 2026 22:04:52 -0500
 lib/semverve/version_metadata.rb	Sun, 05 Jul 2026 22:04:52 -0500
-lib/semverve/version_references.rb	Sun, 05 Jul 2026 22:04:52 -0500
+lib/semverve/version_references.rb	Mon, 06 Jul 2026 22:07:20 -0500

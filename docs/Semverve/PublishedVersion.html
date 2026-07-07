@@ -5,17 +5,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>module Semverve::Formats - RDoc Documentation</title>
+<title>class Semverve::PublishedVersion - RDoc Documentation</title>
 
 
   <meta
     name="keywords"
-    content="ruby,module,Semverve::Formats"
+    content="ruby,class,Semverve::PublishedVersion"
   >
 
     <meta
       name="description"
-      content="module Semverve::Formats: Format handlers for parsing, replacing, and generating version files."
+      content="class Semverve::PublishedVersion: Checks whether the current gem version already exists on a RubyGems-compatible host."
     >
 
 
@@ -24,11 +24,11 @@
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="module Semverve::Formats - RDoc Documentation">
+<meta property="og:title" content="class Semverve::PublishedVersion - RDoc Documentation">
 
 
 
-    <meta property="og:description" content="Format handlers for parsing, replacing, and generating version files.">
+    <meta property="og:description" content="Checks whether the current gem version already exists on a RubyGems-compatible host.">
 
 
 
@@ -36,11 +36,11 @@
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="module Semverve::Formats - RDoc Documentation">
+<meta name="twitter:title" content="class Semverve::PublishedVersion - RDoc Documentation">
 
 
 
-    <meta name="twitter:description" content="Format handlers for parsing, replacing, and generating version files.">
+    <meta name="twitter:description" content="Checks whether the current gem version already exists on a RubyGems-compatible host.">
 
 
 
@@ -96,7 +96,7 @@
 
 
 
-<body role="document" class="module has-toc">
+<body role="document" class="class has-toc">
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <!-- Chevron (right arrow) - used for expand/collapse -->
   <symbol
@@ -378,6 +378,21 @@
   
 
   
+<div id="parent-class-section" class="nav-section">
+  <details class="nav-section-collapsible" open>
+    <summary class="nav-section-header">
+      <span class="nav-section-icon">
+        <svg><use href="#icon-ancestors"></use></svg>
+      </span>
+      <span class="nav-section-title">Ancestors</span>
+      <span class="nav-section-chevron">
+        <svg><use href="#icon-chevron"></use></svg>
+      </span>
+    </summary>
+    <ul><li>Object</li></ul>
+  </details>
+</div>
+
 
   
 
@@ -397,13 +412,36 @@
       </summary>
       <ul class="nav-list" role="directory">
 
-        <li ><a href="#method-c-fetch">fetch</a></li>
+        <li ><a href="#method-c-http_getter">http_getter</a></li>
+
+        <li ><a href="#method-c-new">new</a></li>
 
       </ul>
     </details>
   </div>
 
 
+
+  <div class="nav-section">
+    <details class="nav-section-collapsible" open>
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg><use href="#icon-instance-methods"></use></svg>
+        </span>
+        <span class="nav-section-title">Instance Methods</span>
+        <span class="nav-section-chevron">
+          <svg><use href="#icon-chevron"></use></svg>
+        </span>
+      </summary>
+      <ul class="nav-list" role="directory">
+
+        <li ><a href="#method-i-check">check</a></li>
+
+        <li ><a href="#method-i-published-3F">published?</a></li>
+
+      </ul>
+    </details>
+  </div>
 
 
   <div id="classindex-section" class="nav-section">
@@ -424,7 +462,7 @@
 
 </nav>
 
-<main role="main" aria-labelledby="module-semverve-formats">
+<main role="main" aria-labelledby="class-semverve-publishedversion">
   
   
     <ol role="navigation" aria-label="Breadcrumb navigation" class="breadcrumb">
@@ -437,22 +475,22 @@
       
       <li>
         
-        <span>Formats</span>
+        <span>PublishedVersion</span>
         
       </li>
       
     </ol>
   
 
-  <span id="module-Semverve::Formats" class="legacy-anchor"></span>
-  <h1 id="module-semverve-formats" class="anchor-link module page-title">
-    <span class="page-title-kind">module</span>
-    <span class="page-title-name">Semverve::Formats</span>
+  <span id="class-Semverve::PublishedVersion" class="legacy-anchor"></span>
+  <h1 id="class-semverve-publishedversion" class="anchor-link class page-title">
+    <span class="page-title-kind">class</span>
+    <span class="page-title-name">Semverve::PublishedVersion</span>
   </h1>
 
   <section class="description">
     
-<p>Format handlers for parsing, replacing, and generating version files.</p>
+<p>Checks whether the current gem version already exists on a RubyGems-compatible host.</p>
 
   </section>
 
@@ -466,6 +504,33 @@
 
 
 
+    <section class="attribute-method-details method-section">
+      <header>
+        <h3 id="untitled-attributes"><a href="#untitled-attributes">Attributes</a></h3>
+      </header>
+
+
+      <div id="attribute-c-http_getter" class="method-detail anchor-link">
+        <div class="method-heading attribute-method-heading">
+          <a href="#attribute-c-http_getter" title="Link to this attribute">
+            <span class="method-name">http_getter</span>
+            <span class="attribute-access-type">[W]</span>
+          </a>
+
+        </div>
+
+        <div class="method-description">
+
+
+        <p>Callable used to fetch RubyGems-compatible API responses.</p>
+
+<p>@return [#call]</p>
+
+        </div>
+      </div>
+
+    </section>
+
 
 
 
@@ -477,14 +542,14 @@
        </header>
 
 
-      <div id="method-c-fetch" class="method-detail anchor-link ">
+      <div id="method-c-http_getter" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
 
               <div class="method-heading">
-                <a href="#method-c-fetch" title="Link to this method">
-                  <span class="method-name">fetch</span>
-                  <span class="method-args">(name)</span>
+                <a href="#method-c-http_getter" title="Link to this method">
+                  <span class="method-name">http_getter</span>
+                  <span class="method-args">()</span>
                 </a>
               </div>
 
@@ -502,17 +567,10 @@
         </div>
 
 
-          <div class="method-source-code" id="fetch-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/formats.rb, line 16</span>
-<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-identifier">name</span>)
-  <span class="ruby-keyword">case</span> <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_sym</span>
-  <span class="ruby-keyword">when</span> <span class="ruby-value">:</span><span class="ruby-value">module</span>
-    <span class="ruby-constant">ModuleConstants</span>.<span class="ruby-identifier">new</span>
-  <span class="ruby-keyword">when</span> <span class="ruby-value">:</span><span class="ruby-value">simple</span>
-    <span class="ruby-constant">SimpleString</span>.<span class="ruby-identifier">new</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">Error</span>, <span class="ruby-string">&quot;</span><span class="ruby-string">Unknown version format </span><span class="ruby-string">#{</span><span class="ruby-identifier">name</span>.<span class="ruby-identifier">inspect</span><span class="ruby-string">}</span><span class="ruby-string">. Use :module or :simple.</span><span class="ruby-string">&quot;</span>
-  <span class="ruby-keyword">end</span>
+          <div class="method-source-code" id="http_getter-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/published_version.rb, line 26</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">http_getter</span>
+  <span class="ruby-ivar">@http_getter</span> ||= <span class="ruby-operator">-&gt;</span>(<span class="ruby-identifier">uri</span>) { <span class="ruby-constant">Net</span><span class="ruby-operator">::</span><span class="ruby-constant">HTTP</span>.<span class="ruby-identifier">get_response</span>(<span class="ruby-identifier">uri</span>) }
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -521,11 +579,63 @@
         <div class="method-description">
 
 
-          <p>Returns the handler for a configured version-file format.</p>
+          <p>Returns the HTTP response fetcher.</p>
 
-<p>@param [Symbol, String] name</p>
+<p>@return [#call]</p>
 
-<p>@return [Semverve::Formats::ModuleConstants, <a href="Formats/SimpleString.html"><code>Semverve::Formats::SimpleString</code></a>]</p>
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-c-new" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-c-new" title="Link to this method">
+                  <span class="method-name">new</span>
+                  <span class="method-args">(configuration, current_version)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="new-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/published_version.rb, line 38</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">configuration</span>, <span class="ruby-identifier">current_version</span>)
+  <span class="ruby-ivar">@configuration</span> = <span class="ruby-identifier">configuration</span>
+  <span class="ruby-ivar">@current_version</span> = <span class="ruby-identifier">current_version</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Initializes a published-version check.</p>
+
+<p>@param [Semverve::ResolvedConfiguration] configuration @param [Semverve::SemanticVersion] current_version</p>
+
+<p>@return [Semverve::PublishedVersion]</p>
 
 
         </div>
@@ -544,6 +654,118 @@
 
 
 
+
+     <section id="public-instance-untitled-method-details" class="method-section anchor-link">
+       <header>
+         <h3 id="public-instance-untitled-methods"><a href="#public-instance-untitled-methods">Public Instance Methods</a></h3>
+       </header>
+
+
+      <div id="method-i-check" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-check" title="Link to this method">
+                  <span class="method-name">check</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="check-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/published_version.rb, line 55</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">check</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">published?</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">Error</span>, <span class="ruby-string">&quot;</span><span class="ruby-string">#{</span><span class="ruby-identifier">configuration</span>.<span class="ruby-identifier">gem_name</span><span class="ruby-string">}</span><span class="ruby-string"> </span><span class="ruby-string">#{</span><span class="ruby-identifier">current_version</span><span class="ruby-string">}</span><span class="ruby-string"> already exists on </span><span class="ruby-string">#{</span><span class="ruby-identifier">configuration</span>.<span class="ruby-identifier">rubygems_host</span><span class="ruby-string">}</span><span class="ruby-string">.</span><span class="ruby-string">&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Raises if the current version already exists.</p>
+
+<p>@return [void]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-published-3F" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-published-3F" title="Link to this method">
+                  <span class="method-name">published?</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="published-3F-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/published_version.rb, line 47</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">published?</span>
+  <span class="ruby-identifier">versions</span>.<span class="ruby-identifier">any?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">version</span><span class="ruby-operator">|</span> <span class="ruby-identifier">version</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-string">&quot;</span><span class="ruby-string">number</span><span class="ruby-string">&quot;</span>, <span class="ruby-keyword">nil</span>).<span class="ruby-identifier">to_s</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">current_version</span>.<span class="ruby-identifier">to_s</span> }
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Whether the current version already exists on the configured host.</p>
+
+<p>@return [Boolean]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+    </section>
 
 
 
