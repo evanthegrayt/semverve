@@ -2,9 +2,11 @@
 
 require "ripper"
 
-require_relative "error"
 require_relative "file_list_resolver"
+require_relative "finding"
+require_relative "fix_result"
 require_relative "semantic_version"
+require_relative "version_match_policy"
 
 module Semverve
   ##
@@ -29,78 +31,6 @@ module Semverve
     TEXT_EXTENSIONS = %w[.adoc .markdown .md .rdoc .txt].freeze
 
     ##
-    # A stale or non-current version reference found in a project file.
-    class Finding
-      ##
-      # Path relative to the configured project root.
-      #
-      # @return [String]
-      attr_reader :path
-
-      ##
-      # One-based line number.
-      #
-      # @return [Integer]
-      attr_reader :line
-
-      ##
-      # One-based column number.
-      #
-      # @return [Integer]
-      attr_reader :column
-
-      ##
-      # Referenced semantic version.
-      #
-      # @return [Semverve::SemanticVersion]
-      attr_reader :version
-
-      ##
-      # Initializes a finding.
-      #
-      # @param [String] path
-      # @param [Integer] line
-      # @param [Integer] column
-      # @param [Semverve::SemanticVersion] version
-      #
-      # @return [Semverve::VersionReferences::Finding]
-      def initialize(path:, line:, column:, version:)
-        @path = path
-        @line = line
-        @column = column
-        @version = version
-      end
-    end
-
-    ##
-    # Result of fixing version references.
-    class FixResult
-      ##
-      # Files changed by the fix.
-      #
-      # @return [Array<String>]
-      attr_reader :changed_files
-
-      ##
-      # Number of replacements made.
-      #
-      # @return [Integer]
-      attr_reader :replacement_count
-
-      ##
-      # Initializes a fix result.
-      #
-      # @param [Array<String>] changed_files
-      # @param [Integer] replacement_count
-      #
-      # @return [Semverve::VersionReferences::FixResult]
-      def initialize(changed_files:, replacement_count:)
-        @changed_files = changed_files
-        @replacement_count = replacement_count
-      end
-    end
-
-    ##
     # Initializes version-reference scanning.
     #
     # @param [Semverve::ResolvedConfiguration] configuration
@@ -117,7 +47,7 @@ module Semverve
     ##
     # Version-reference findings in configured files.
     #
-    # @return [Array<Semverve::VersionReferences::Finding>]
+    # @return [Array<Semverve::Finding>]
     def findings
       files.flat_map { |path| findings_for_file(path) }
     end
@@ -125,7 +55,7 @@ module Semverve
     ##
     # Replaces found version references with the current version.
     #
-    # @return [Semverve::VersionReferences::FixResult]
+    # @return [Semverve::FixResult]
     def fix
       changed_files = []
       replacement_count = 0
@@ -141,7 +71,7 @@ module Semverve
         replacement_count += count
       end
 
-      FixResult.new(changed_files: changed_files, replacement_count: replacement_count)
+      Semverve::FixResult.new(changed_files: changed_files, replacement_count: replacement_count)
     end
 
     private
@@ -202,7 +132,7 @@ module Semverve
     #
     # @param [String] path
     #
-    # @return [Array<Semverve::VersionReferences::Finding>]
+    # @return [Array<Semverve::Finding>]
     def findings_for_file(path)
       content = File.read(path)
 
@@ -324,10 +254,10 @@ module Semverve
     # @param [Hash] segment
     # @param [String] content
     #
-    # @return [Array<Semverve::VersionReferences::Finding>]
+    # @return [Array<Semverve::Finding>]
     def findings_for_segment(path, segment, content)
       references_for_segment(segment, content).map do |reference|
-        Finding.new(
+        Semverve::Finding.new(
           path: relative_path(path),
           line: segment[:line],
           column: reference[:column],
@@ -386,14 +316,7 @@ module Semverve
     def report?(version)
       return version == target_version if target_version
 
-      case configuration.version_match_mode
-      when :older
-        version < current_version
-      when :non_current
-        version != current_version
-      else
-        raise Error, "Unknown version match mode #{configuration.version_match_mode.inspect}. Use :older or :non_current."
-      end
+      match_policy.report?(version)
     end
 
     ##
@@ -412,6 +335,18 @@ module Semverve
       previous_nonblank_line = lines[0...(line - 1)].reverse_each.find { |candidate| !candidate.strip.empty? }
       # rubocop:enable Style/ReverseFind
       previous_nonblank_line&.include?(IGNORE_MARKER)
+    end
+
+    ##
+    # Version matching behavior for references.
+    #
+    # @return [Semverve::VersionMatchPolicy]
+    def match_policy
+      @match_policy ||= VersionMatchPolicy.new(
+        current_version: current_version,
+        match_mode: configuration.version_match_mode,
+        target_version: target_version
+      )
     end
 
     ##

@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "configuration"
 require_relative "file_list_resolver"
+require_relative "finding"
+require_relative "fix_result"
 require_relative "semantic_version"
+require_relative "version_literal_rewriter"
+require_relative "version_match_policy"
 
 module Semverve
   ##
@@ -18,79 +21,7 @@ module Semverve
     # Ruby assignments that are safe enough to rewrite automatically.
     #
     # @return [Regexp]
-    RUBY_ASSIGNMENT_PATTERN = Configuration::DEFAULT_VERSION_CODE_REFERENCE_PATTERN
-
-    ##
-    # A code version literal found in a configured file.
-    class Finding
-      ##
-      # Path relative to the configured project root.
-      #
-      # @return [String]
-      attr_reader :path
-
-      ##
-      # One-based line number.
-      #
-      # @return [Integer]
-      attr_reader :line
-
-      ##
-      # One-based column number.
-      #
-      # @return [Integer]
-      attr_reader :column
-
-      ##
-      # Referenced semantic version.
-      #
-      # @return [Semverve::SemanticVersion]
-      attr_reader :version
-
-      ##
-      # Initializes a finding.
-      #
-      # @param [String] path
-      # @param [Integer] line
-      # @param [Integer] column
-      # @param [Semverve::SemanticVersion] version
-      #
-      # @return [Semverve::VersionCodeReferences::Finding]
-      def initialize(path:, line:, column:, version:)
-        @path = path
-        @line = line
-        @column = column
-        @version = version
-      end
-    end
-
-    ##
-    # Result of fixing code version literals.
-    class FixResult
-      ##
-      # Files changed by the fix.
-      #
-      # @return [Array<String>]
-      attr_reader :changed_files
-
-      ##
-      # Number of replacements made.
-      #
-      # @return [Integer]
-      attr_reader :replacement_count
-
-      ##
-      # Initializes a fix result.
-      #
-      # @param [Array<String>] changed_files
-      # @param [Integer] replacement_count
-      #
-      # @return [Semverve::VersionCodeReferences::FixResult]
-      def initialize(changed_files:, replacement_count:)
-        @changed_files = changed_files
-        @replacement_count = replacement_count
-      end
-    end
+    RUBY_ASSIGNMENT_PATTERN = /^\s*(?:(?:[A-Z]\w*::)*(?:[A-Z]\w*VERSION[A-Z0-9_]*|VERSION)|(?:[a-z_]\w*|self)\.version)\s*=\s*(?<quote>["'])(?<version>\d+\.\d+\.\d+)\k<quote>/
 
     ##
     # Initializes code version literal scanning.
@@ -109,7 +40,7 @@ module Semverve
     ##
     # Code version literal findings in configured files.
     #
-    # @return [Array<Semverve::VersionCodeReferences::Finding>]
+    # @return [Array<Semverve::Finding>]
     def findings
       files.flat_map { |path| findings_for_file(path) }
     end
@@ -117,7 +48,7 @@ module Semverve
     ##
     # Replaces found code version literals with the current version.
     #
-    # @return [Semverve::VersionCodeReferences::FixResult]
+    # @return [Semverve::FixResult]
     def fix
       changed_files = []
       replacement_count = 0
@@ -133,7 +64,7 @@ module Semverve
         replacement_count += count
       end
 
-      FixResult.new(changed_files: changed_files, replacement_count: replacement_count)
+      Semverve::FixResult.new(changed_files: changed_files, replacement_count: replacement_count)
     end
 
     private
@@ -194,7 +125,7 @@ module Semverve
     #
     # @param [String] path
     #
-    # @return [Array<Semverve::VersionCodeReferences::Finding>]
+    # @return [Array<Semverve::Finding>]
     def findings_for_file(path)
       lines = File.readlines(path)
 
@@ -207,7 +138,7 @@ module Semverve
         version = SemanticVersion.parse(match[:version])
         next unless report?(version)
 
-        Finding.new(
+        Semverve::Finding.new(
           path: relative_path(path),
           line: line_number,
           column: match.begin(:version) + 1,
@@ -268,14 +199,7 @@ module Semverve
     def report?(version)
       return version == target_version if target_version
 
-      case configuration.version_match_mode
-      when :older
-        version < current_version
-      when :non_current
-        version != current_version
-      else
-        raise Error, "Unknown version match mode #{configuration.version_match_mode.inspect}. Use :older or :non_current."
-      end
+      match_policy.report?(version)
     end
 
     ##
@@ -285,13 +209,7 @@ module Semverve
     #
     # @return [String]
     def replace_matched_version(line)
-      line.sub(pattern) do |matched_text|
-        match = Regexp.last_match
-        version_start = match.begin(:version) - match.begin(0)
-        version_end = match.end(:version) - match.begin(0)
-
-        "#{matched_text[0...version_start]}#{current_version}#{matched_text[version_end..]}"
-      end
+      literal_rewriter.rewrite(line)
     end
 
     ##
@@ -302,6 +220,26 @@ module Semverve
     # @return [String]
     def relative_path(path)
       path.delete_prefix("#{root}/")
+    end
+
+    ##
+    # Version matching behavior for code literals.
+    #
+    # @return [Semverve::VersionMatchPolicy]
+    def match_policy
+      @match_policy ||= VersionMatchPolicy.new(
+        current_version: current_version,
+        match_mode: configuration.version_match_mode,
+        target_version: target_version
+      )
+    end
+
+    ##
+    # Safe literal rewriter for the configured pattern.
+    #
+    # @return [Semverve::VersionLiteralRewriter]
+    def literal_rewriter
+      @literal_rewriter ||= VersionLiteralRewriter.new(pattern: pattern, replacement: current_version)
     end
   end
 end
