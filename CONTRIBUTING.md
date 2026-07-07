@@ -100,6 +100,27 @@ When changing behavior, update the README at the same time. The README is the
 primary user guide, so examples should match real task names, configuration
 names, defaults, and output.
 
+## Rake Task Interface Design
+Semverve should feel natural from a shell while staying Rake-native. Prefer
+Rake task arguments for direct task inputs:
+
+```sh
+bundle exec rake 'semverve:set[x.y.z]'
+bundle exec rake 'semverve:generate[simple,force]'
+```
+
+For tasks with more than one optional value, prefer meaning-bearing tokens over
+strict positional placeholders. For example, `semverve:generate` treats semantic
+versions as the generated version, `module` or `simple` as the format, and
+`force` as the overwrite mode. That keeps invocations like
+`rake 'semverve:generate[simple]'` and `rake 'semverve:generate[force]'`
+readable without requiring awkward empty slots.
+
+Reserve environment variables for cross-cutting runtime toggles that compose
+across related tasks, such as `SEMVERVE_REPORT_IGNORED=true rake
+semverve:check`. Avoid generic environment variables like `VERSION`, `FORMAT`,
+or `FORCE`; they can collide with a user's shell, CI, or parent build process.
+
 ## Versioning and Release Checks
 Semverve uses Semverve to maintain itself, which doubles as useful
 smoke-testing. The project Rakefile requires `lib/semverve/task` and installs

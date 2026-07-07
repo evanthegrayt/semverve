@@ -366,17 +366,37 @@ module Semverve
     #
     # @return [Hash]
     def generate_options(args)
-      values = args.to_a
-      force = values.delete("force")
-      if values.length > 2
-        raise Error, "Run rake 'semverve:generate[VERSION,FORMAT,force]'."
+      args.to_a.each_with_object({force: false}) do |value, options|
+        assign_generate_option(value, options)
       end
+    end
 
-      {
-        version: values[0],
-        format: values[1],
-        force: !force.nil?
-      }
+    ##
+    # Assigns a single +semverve:generate+ token by meaning.
+    #
+    # @param [String] value
+    # @param [Hash] options
+    #
+    # @return [void]
+    def assign_generate_option(value, options)
+      case value
+      when nil, ""
+        nil
+      when "force"
+        raise Error, "Duplicate generate option force." if options[:force]
+
+        options[:force] = true
+      when SemanticVersion::PATTERN
+        raise Error, "Duplicate generate version #{value.inspect}." if options[:version]
+
+        options[:version] = value
+      when "module", "simple"
+        raise Error, "Duplicate generate format #{value.inspect}." if options[:format]
+
+        options[:format] = value
+      else
+        raise Error, "Unknown generate option #{value.inspect}. Use a semantic version, module, simple, or force."
+      end
     end
 
     ##

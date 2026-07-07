@@ -133,6 +133,7 @@ Semverve tasks use Rake task arguments for values:
 ```sh
 rake 'semverve:set[1.2.3]'
 rake 'semverve:generate[1.0.0,simple]'
+rake 'semverve:generate[simple]'
 rake 'semverve:generate[force]'
 ```
 
@@ -250,6 +251,7 @@ Generate a specific version or format:
 
 ```sh
 rake 'semverve:generate[1.0.0,simple]'
+rake 'semverve:generate[simple]'
 ```
 
 Generation fails if the target file already exists. To replace it:
@@ -258,11 +260,14 @@ Generation fails if the target file already exists. To replace it:
 rake 'semverve:generate[force]'
 ```
 
-`semverve:generate` accepts optional `version` and `format` arguments. Add a
-`force` token to overwrite an existing version file:
+`semverve:generate` accepts optional tokens for version, format, and force.
+Token order does not matter: semantic versions set the generated version,
+`module` or `simple` sets the format, and `force` overwrites an existing version
+file.
 
 ```sh
 rake 'semverve:generate[1.0.0,force]'
+rake 'semverve:generate[simple,force]'
 rake 'semverve:generate[1.0.0,simple,force]'
 ```
 
@@ -619,6 +624,39 @@ For release CI, run the release check before building or pushing:
 ```sh
 bundle exec rake semverve:check:release build
 ```
+
+## Vim
+While there's no official vim support (yet), you can add the following to
+`~/.vim/plugin/semverve.vim`.
+
+```vim
+command! -bang SemverveAudit call <SID>semverve_audit(<bang>0)
+function! s:semverve_audit(report_ignored) abort
+  let l:old_efm = &errorformat
+  try
+    let &errorformat = '%f:%l:%c:%m'
+    let l:string = ""
+    if !a:report_ignored
+      let l:string .= 'SEMVERVE_REPORT_IGNORED=true '
+    endif
+    let l:string .= 'bundle exec rake semverve:check 2>/dev/null'
+    cexpr systemlist(l:string)
+    if v:shell_error != 0
+      copen
+    else
+      cclose
+      echo 'Semverve checks passed.'
+    endif
+  finally
+    let &errorformat = l:old_efm
+  endtry
+endfunction
+```
+
+You can then call `:SemverveAudit`, which will call `bundle exec rake
+semverve:check`, and `:SemverveAudit!` which will call the same command with
+`SEMVERVE_REPORT_IGNORED=true`, and populate and open the quickfix list if any
+offenses are found.
 
 ## Reporting Bugs and Requesting Features
 If you have an idea or find a bug, please [create an
