@@ -437,6 +437,30 @@ module Semverve
       end
     end
 
+    def test_generate_accepts_format_without_version
+      in_project do
+        write_gemspec("my_gem")
+
+        Task.new
+
+        capture_stdout { Rake::Task["semverve:generate"].invoke("simple") }
+
+        assert_match(/VERSION = "0.1.0"/, File.read(File.join(@tmpdir, "lib", "my_gem", "version.rb")))
+      end
+    end
+
+    def test_generate_accepts_arguments_in_any_order
+      in_project do
+        write_gemspec("my_gem")
+
+        Task.new
+
+        capture_stdout { Rake::Task["semverve:generate"].invoke("simple", "1.2.3") }
+
+        assert_match(/VERSION = "1.2.3"/, File.read(File.join(@tmpdir, "lib", "my_gem", "version.rb")))
+      end
+    end
+
     def test_generate_ignores_env_version_and_format
       in_project do
         write_gemspec("my_gem")
@@ -477,6 +501,19 @@ module Semverve
         capture_stdout { Rake::Task["semverve:generate"].invoke("1.2.3", "simple", "force") }
 
         assert_match(/VERSION = "1\.2\.3"/, File.read(path))
+      end
+    end
+
+    def test_generate_accepts_force_token_after_format
+      in_project do
+        write_gemspec("my_gem")
+        path = write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        capture_stdout { Rake::Task["semverve:generate"].invoke("simple", "force") }
+
+        assert_match(/VERSION = "0\.1\.0"/, File.read(path))
       end
     end
 
@@ -534,11 +571,11 @@ module Semverve
 
         error = assert_raise(Error) { Rake::Task["semverve:generate"].invoke("1.2.3", "simple", "true") }
 
-        assert_equal "Run rake 'semverve:generate[VERSION,FORMAT,force]'.", error.message
+        assert_equal "Unknown generate option \"true\". Use a semantic version, module, simple, or force.", error.message
       end
     end
 
-    def test_generate_rejects_extra_non_force_arguments
+    def test_generate_rejects_unknown_arguments
       in_project do
         write_gemspec("my_gem")
 
@@ -546,7 +583,43 @@ module Semverve
 
         error = assert_raise(Error) { Rake::Task["semverve:generate"].invoke("1.2.3", "simple", "later") }
 
-        assert_equal "Run rake 'semverve:generate[VERSION,FORMAT,force]'.", error.message
+        assert_equal "Unknown generate option \"later\". Use a semantic version, module, simple, or force.", error.message
+      end
+    end
+
+    def test_generate_rejects_duplicate_versions
+      in_project do
+        write_gemspec("my_gem")
+
+        Task.new
+
+        error = assert_raise(Error) { Rake::Task["semverve:generate"].invoke("1.2.3", "2.3.4") }
+
+        assert_equal "Duplicate generate version \"2.3.4\".", error.message
+      end
+    end
+
+    def test_generate_rejects_duplicate_formats
+      in_project do
+        write_gemspec("my_gem")
+
+        Task.new
+
+        error = assert_raise(Error) { Rake::Task["semverve:generate"].invoke("simple", "module") }
+
+        assert_equal "Duplicate generate format \"module\".", error.message
+      end
+    end
+
+    def test_generate_rejects_duplicate_force
+      in_project do
+        write_gemspec("my_gem")
+
+        Task.new
+
+        error = assert_raise(Error) { Rake::Task["semverve:generate"].invoke("force", "force") }
+
+        assert_equal "Duplicate generate option force.", error.message
       end
     end
 
