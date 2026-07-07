@@ -5,17 +5,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>class Semverve::ProjectMetadata - RDoc Documentation</title>
+<title>class Semverve::VersionChecks::Check - RDoc Documentation</title>
 
 
   <meta
     name="keywords"
-    content="ruby,class,Semverve::ProjectMetadata"
+    content="ruby,class,Semverve::VersionChecks::Check"
   >
 
     <meta
       name="description"
-      content="class Semverve::ProjectMetadata: Infers project metadata from explicit configuration or project files."
+      content="class Semverve::VersionChecks::Check: Base behavior for check adapters. Public check objects must expose name, task_name, descriptions, labels, findings, and fix."
     >
 
 
@@ -24,11 +24,11 @@
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="class Semverve::ProjectMetadata - RDoc Documentation">
+<meta property="og:title" content="class Semverve::VersionChecks::Check - RDoc Documentation">
 
 
 
-    <meta property="og:description" content="Infers project metadata from explicit configuration or project files.">
+    <meta property="og:description" content="Base behavior for check adapters. Public check objects must expose name, task_name, descriptions, labels, findings, and fix.">
 
 
 
@@ -36,60 +36,60 @@
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="class Semverve::ProjectMetadata - RDoc Documentation">
+<meta name="twitter:title" content="class Semverve::VersionChecks::Check - RDoc Documentation">
 
 
 
-    <meta name="twitter:description" content="Infers project metadata from explicit configuration or project files.">
+    <meta name="twitter:description" content="Base behavior for check adapters. Public check objects must expose name, task_name, descriptions, labels, findings, and fix.">
 
 
 
 <script type="text/javascript">
-  var rdoc_rel_prefix = "../";
-  var index_rel_prefix = "../";
+  var rdoc_rel_prefix = "../../";
+  var index_rel_prefix = "../../";
 </script>
 
 <script
-  src="../js/theme-toggle.js?v=8.0.0"
+  src="../../js/theme-toggle.js?v=8.0.0"
 ></script>
 
 <script
-  src="../js/search_navigation.js?v=8.0.0"
+  src="../../js/search_navigation.js?v=8.0.0"
   defer
 ></script>
 
 <script
-  src="../js/search_data.js?v=8.0.0"
+  src="../../js/search_data.js?v=8.0.0"
   defer
 ></script>
 
 <script
-  src="../js/search_ranker.js?v=8.0.0"
+  src="../../js/search_ranker.js?v=8.0.0"
   defer
 ></script>
 
 <script
-  src="../js/search_controller.js?v=8.0.0"
+  src="../../js/search_controller.js?v=8.0.0"
   defer
 ></script>
 
 <script
-  src="../js/c_highlighter.js?v=8.0.0"
+  src="../../js/c_highlighter.js?v=8.0.0"
   defer
 ></script>
 
 <script
-  src="../js/bash_highlighter.js?v=8.0.0"
+  src="../../js/bash_highlighter.js?v=8.0.0"
   defer
 ></script>
 
 <script
-  src="../js/aliki.js?v=8.0.0"
+  src="../../js/aliki.js?v=8.0.0"
   defer
 ></script>
 
 <link
-  href="../css/rdoc.css?v=8.0.0"
+  href="../../css/rdoc.css?v=8.0.0"
   rel="stylesheet"
 >
 
@@ -307,7 +307,7 @@
 </svg>
 
 <header class="top-navbar">
-  <a href="../index.html" class="navbar-brand">
+  <a href="../../index.html" class="navbar-brand">
     RDoc Documentation
   </a>
 
@@ -399,25 +399,6 @@
   
 
   
-  <div class="nav-section">
-    <details class="nav-section-collapsible" open>
-      <summary class="nav-section-header">
-        <span class="nav-section-icon">
-          <svg><use href="#icon-class-methods"></use></svg>
-        </span>
-        <span class="nav-section-title">Class Methods</span>
-        <span class="nav-section-chevron">
-          <svg><use href="#icon-chevron"></use></svg>
-        </span>
-      </summary>
-      <ul class="nav-list" role="directory">
-
-        <li ><a href="#method-c-new">new</a></li>
-
-      </ul>
-    </details>
-  </div>
-
 
 
   <div class="nav-section">
@@ -433,11 +414,17 @@
       </summary>
       <ul class="nav-list" role="directory">
 
-        <li ><a href="#method-i-gem_name">gem_name</a></li>
+        <li ><a href="#method-i-exact_target_fix_noop_notice-3F">exact_target_fix_noop_notice?</a></li>
 
-        <li ><a href="#method-i-module_name">module_name</a></li>
+        <li ><a href="#method-i-findings">findings</a></li>
 
-        <li ><a href="#method-i-version_file">version_file</a></li>
+        <li ><a href="#method-i-fix">fix</a></li>
+
+        <li ><a href="#method-i-fix_label">fix_label</a></li>
+
+        <li ><a href="#method-i-targetable-3F">targetable?</a></li>
+
+        <li ><a href="#method-i-task_arguments">task_arguments</a></li>
 
       </ul>
     </details>
@@ -456,41 +443,47 @@
       </span>
     </summary>
 
-    <ul class="link-list nav-list"><li><details open><summary><code><a href="../Semverve.html">Semverve</a></code></summary><ul class="link-list nav-list"><li><details><summary><code><a href="../Semverve/Adapters.html">Adapters</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/Adapters/Base.html">Base</a></code></li><li><code><a href="../Semverve/Adapters/Rails.html">Rails</a></code></li><li><code><a href="../Semverve/Adapters/Sinatra.html">Sinatra</a></code></li></ul></details></li><li><code><a href="../Semverve/Configuration.html">Configuration</a></code></li><li><code><a href="../Semverve/Error.html">Error</a></code></li><li><code><a href="../Semverve/FileListResolver.html">FileListResolver</a></code></li><li><code><a href="../Semverve/Finding.html">Finding</a></code></li><li><code><a href="../Semverve/FixResult.html">FixResult</a></code></li><li><details><summary><code><a href="../Semverve/Formats.html">Formats</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/Formats/ModuleConstants.html">ModuleConstants</a></code></li><li><code><a href="../Semverve/Formats/SimpleString.html">SimpleString</a></code></li></ul></details></li><li><code><a href="../Semverve/Generator.html">Generator</a></code></li><li><code><a href="../Semverve/PackageMetadata.html">PackageMetadata</a></code></li><li><code><a href="../Semverve/Presets.html">Presets</a></code></li><li><code><a href="../Semverve/ProjectMetadata.html">ProjectMetadata</a></code></li><li><code><a href="../Semverve/PublishedVersion.html">PublishedVersion</a></code></li><li><code><a href="../Semverve/RailsConfigMetadata.html">RailsConfigMetadata</a></code></li><li><code><a href="../Semverve/Railtie.html">Railtie</a></code></li><li><code><a href="../Semverve/ResolvedConfiguration.html">ResolvedConfiguration</a></code></li><li><code><a href="../Semverve/SemanticVersion.html">SemanticVersion</a></code></li><li><code><a href="../Semverve/Task.html">Task</a></code></li><li><code><a href="../Semverve/Version.html">Version</a></code></li><li><details><summary><code><a href="../Semverve/VersionChecks.html">VersionChecks</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/VersionChecks/Check.html">Check</a></code></li><li><code><a href="../Semverve/VersionChecks/CodeReferences.html">CodeReferences</a></code></li><li><code><a href="../Semverve/VersionChecks/DocReferences.html">DocReferences</a></code></li><li><code><a href="../Semverve/VersionChecks/PackageMetadataCheck.html">PackageMetadataCheck</a></code></li><li><code><a href="../Semverve/VersionChecks/RailsConfigMetadataCheck.html">RailsConfigMetadataCheck</a></code></li></ul></details></li><li><code><a href="../Semverve/VersionCodeReferences.html">VersionCodeReferences</a></code></li><li><details><summary><code><a href="../Semverve/VersionFile.html">VersionFile</a></code></summary><ul class="link-list nav-list"><li><code><a href="../Semverve/VersionFile/UpdateResult.html">UpdateResult</a></code></li></ul></details></li><li><code><a href="../Semverve/VersionLiteralRewriter.html">VersionLiteralRewriter</a></code></li><li><code><a href="../Semverve/VersionMatchPolicy.html">VersionMatchPolicy</a></code></li><li><code><a href="../Semverve/VersionReferences.html">VersionReferences</a></code></li></ul></details></li></ul>
+    <ul class="link-list nav-list"><li><details open><summary><code><a href="../../Semverve.html">Semverve</a></code></summary><ul class="link-list nav-list"><li><details><summary><code><a href="../../Semverve/Adapters.html">Adapters</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Semverve/Adapters/Base.html">Base</a></code></li><li><code><a href="../../Semverve/Adapters/Rails.html">Rails</a></code></li><li><code><a href="../../Semverve/Adapters/Sinatra.html">Sinatra</a></code></li></ul></details></li><li><code><a href="../../Semverve/Configuration.html">Configuration</a></code></li><li><code><a href="../../Semverve/Error.html">Error</a></code></li><li><code><a href="../../Semverve/FileListResolver.html">FileListResolver</a></code></li><li><code><a href="../../Semverve/Finding.html">Finding</a></code></li><li><code><a href="../../Semverve/FixResult.html">FixResult</a></code></li><li><details><summary><code><a href="../../Semverve/Formats.html">Formats</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Semverve/Formats/ModuleConstants.html">ModuleConstants</a></code></li><li><code><a href="../../Semverve/Formats/SimpleString.html">SimpleString</a></code></li></ul></details></li><li><code><a href="../../Semverve/Generator.html">Generator</a></code></li><li><code><a href="../../Semverve/PackageMetadata.html">PackageMetadata</a></code></li><li><code><a href="../../Semverve/Presets.html">Presets</a></code></li><li><code><a href="../../Semverve/ProjectMetadata.html">ProjectMetadata</a></code></li><li><code><a href="../../Semverve/PublishedVersion.html">PublishedVersion</a></code></li><li><code><a href="../../Semverve/RailsConfigMetadata.html">RailsConfigMetadata</a></code></li><li><code><a href="../../Semverve/Railtie.html">Railtie</a></code></li><li><code><a href="../../Semverve/ResolvedConfiguration.html">ResolvedConfiguration</a></code></li><li><code><a href="../../Semverve/SemanticVersion.html">SemanticVersion</a></code></li><li><code><a href="../../Semverve/Task.html">Task</a></code></li><li><code><a href="../../Semverve/Version.html">Version</a></code></li><li><details><summary><code><a href="../../Semverve/VersionChecks.html">VersionChecks</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Semverve/VersionChecks/Check.html">Check</a></code></li><li><code><a href="../../Semverve/VersionChecks/CodeReferences.html">CodeReferences</a></code></li><li><code><a href="../../Semverve/VersionChecks/DocReferences.html">DocReferences</a></code></li><li><code><a href="../../Semverve/VersionChecks/PackageMetadataCheck.html">PackageMetadataCheck</a></code></li><li><code><a href="../../Semverve/VersionChecks/RailsConfigMetadataCheck.html">RailsConfigMetadataCheck</a></code></li></ul></details></li><li><code><a href="../../Semverve/VersionCodeReferences.html">VersionCodeReferences</a></code></li><li><details><summary><code><a href="../../Semverve/VersionFile.html">VersionFile</a></code></summary><ul class="link-list nav-list"><li><code><a href="../../Semverve/VersionFile/UpdateResult.html">UpdateResult</a></code></li></ul></details></li><li><code><a href="../../Semverve/VersionLiteralRewriter.html">VersionLiteralRewriter</a></code></li><li><code><a href="../../Semverve/VersionMatchPolicy.html">VersionMatchPolicy</a></code></li><li><code><a href="../../Semverve/VersionReferences.html">VersionReferences</a></code></li></ul></details></li></ul>
   </details>
 </div>
 
 </nav>
 
-<main role="main" aria-labelledby="class-semverve-projectmetadata">
+<main role="main" aria-labelledby="class-semverve-versionchecks-check">
   
   
     <ol role="navigation" aria-label="Breadcrumb navigation" class="breadcrumb">
       
       <li>
         
-        <a href="../Semverve.html">Semverve</a><span class="separator">::</span>
+        <a href="../../Semverve.html">Semverve</a><span class="separator">::</span>
         
       </li>
       
       <li>
         
-        <span>ProjectMetadata</span>
+        <a href="../../Semverve/VersionChecks.html">VersionChecks</a><span class="separator">::</span>
+        
+      </li>
+      
+      <li>
+        
+        <span>Check</span>
         
       </li>
       
     </ol>
   
 
-  <span id="class-Semverve::ProjectMetadata" class="legacy-anchor"></span>
-  <h1 id="class-semverve-projectmetadata" class="anchor-link class page-title">
+  <span id="class-Semverve::VersionChecks::Check" class="legacy-anchor"></span>
+  <h1 id="class-semverve-versionchecks-check" class="anchor-link class page-title">
     <span class="page-title-kind">class</span>
-    <span class="page-title-name">Semverve::ProjectMetadata</span>
+    <span class="page-title-name">Semverve::VersionChecks::Check</span>
   </h1>
 
   <section class="description">
     
-<p>Infers project metadata from explicit configuration or project files.</p>
+<p>Base behavior for check adapters. Public check objects must expose name, task_name, descriptions, labels, findings, and fix.</p>
 
   </section>
 
@@ -509,67 +502,6 @@
 
 
 
-     <section id="public-class-untitled-method-details" class="method-section anchor-link">
-       <header>
-         <h3 id="public-class-untitled-methods"><a href="#public-class-untitled-methods">Public Class Methods</a></h3>
-       </header>
-
-
-      <div id="method-c-new" class="method-detail anchor-link ">
-        <div class="method-header">
-          <div class="method-heading-group">
-
-              <div class="method-heading">
-                <a href="#method-c-new" title="Link to this method">
-                  <span class="method-name">new</span>
-                  <span class="method-args">(configuration)</span>
-                </a>
-              </div>
-
-
-
-          </div>
-
-
-            <div class="method-controls">
-              <details class="method-source-toggle">
-                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
-              </details>
-            </div>
-
-        </div>
-
-
-          <div class="method-source-code" id="new-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/project_metadata.rb, line 15</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-identifier">configuration</span>)
-  <span class="ruby-ivar">@configuration</span> = <span class="ruby-identifier">configuration</span>
-<span class="ruby-keyword">end</span></pre>
-          </div>
-
-
-
-        <div class="method-description">
-
-
-          <p>Initializes project metadata inference.</p>
-
-<p>@param [Semverve::Configuration] configuration</p>
-
-<p>@return [Semverve::ProjectMetadata]</p>
-
-
-        </div>
-
-
-
-
-
-      </div>
-
-
-    </section>
-
 
 
 
@@ -582,13 +514,13 @@
        </header>
 
 
-      <div id="method-i-gem_name" class="method-detail anchor-link ">
+      <div id="method-i-exact_target_fix_noop_notice-3F" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
 
               <div class="method-heading">
-                <a href="#method-i-gem_name" title="Link to this method">
-                  <span class="method-name">gem_name</span>
+                <a href="#method-i-exact_target_fix_noop_notice-3F" title="Link to this method">
+                  <span class="method-name">exact_target_fix_noop_notice?</span>
                   <span class="method-args">()</span>
                 </a>
               </div>
@@ -607,12 +539,10 @@
         </div>
 
 
-          <div class="method-source-code" id="gem_name-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/project_metadata.rb, line 24</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">gem_name</span>
-  <span class="ruby-keyword">return</span> <span class="ruby-identifier">explicit_gem_name</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">configured_gem_name</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">configuration</span>.<span class="ruby-identifier">infer_package_name?</span>
-
-  <span class="ruby-identifier">explicit_gem_name</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">configured_version_file_gem_name</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">gemspec_name</span>
+          <div class="method-source-code" id="exact_target_fix_noop_notice-3F-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 135</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">exact_target_fix_noop_notice?</span>
+  <span class="ruby-keyword">false</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -621,9 +551,9 @@
         <div class="method-description">
 
 
-          <p>Gem name from explicit config, the version-file path, or the gemspec. App adapters can disable package-name inference.</p>
+          <p>Whether findings should print a note when an exact target is already current.</p>
 
-<p>@return [String, nil]</p>
+<p>@return [Boolean]</p>
 
 
         </div>
@@ -635,13 +565,115 @@
       </div>
 
 
-      <div id="method-i-module_name" class="method-detail anchor-link ">
+      <div id="method-i-findings" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
 
               <div class="method-heading">
-                <a href="#method-i-module_name" title="Link to this method">
-                  <span class="method-name">module_name</span>
+                <a href="#method-i-findings" title="Link to this method">
+                  <span class="method-name">findings</span>
+                  <span class="method-args">(_configuration, _current_version, include_ignored: false, target_version: nil)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="findings-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 159</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">findings</span>(<span class="ruby-identifier">_configuration</span>, <span class="ruby-identifier">_current_version</span>, <span class="ruby-value">include_ignored:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">target_version:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Finds mismatches.</p>
+
+<p>@return [Array]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-fix" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-fix" title="Link to this method">
+                  <span class="method-name">fix</span>
+                  <span class="method-args">(_configuration, _current_version, target_version: nil)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="fix-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 167</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">fix</span>(<span class="ruby-identifier">_configuration</span>, <span class="ruby-identifier">_current_version</span>, <span class="ruby-value">target_version:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Fixes mismatches.</p>
+
+<p>@return [#changed_files, #replacement_count]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-fix_label" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-fix_label" title="Link to this method">
+                  <span class="method-name">fix_label</span>
                   <span class="method-args">()</span>
                 </a>
               </div>
@@ -660,10 +692,10 @@
         </div>
 
 
-          <div class="method-source-code" id="module_name-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/project_metadata.rb, line 34</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">module_name</span>
-  <span class="ruby-identifier">explicit_module_name</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">configured_module_name</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">camelize</span>(<span class="ruby-identifier">gem_name</span>)
+          <div class="method-source-code" id="fix_label-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 151</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">fix_label</span>
+  <span class="ruby-identifier">finding_label</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -672,7 +704,7 @@
         <div class="method-description">
 
 
-          <p>Ruby module name from explicit config or the resolved gem name.</p>
+          <p>Label used when reporting replacement counts.</p>
 
 <p>@return [String]</p>
 
@@ -686,13 +718,13 @@
       </div>
 
 
-      <div id="method-i-version_file" class="method-detail anchor-link ">
+      <div id="method-i-targetable-3F" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
 
               <div class="method-heading">
-                <a href="#method-i-version_file" title="Link to this method">
-                  <span class="method-name">version_file</span>
+                <a href="#method-i-targetable-3F" title="Link to this method">
+                  <span class="method-name">targetable?</span>
                   <span class="method-args">()</span>
                 </a>
               </div>
@@ -711,10 +743,10 @@
         </div>
 
 
-          <div class="method-source-code" id="version_file-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/project_metadata.rb, line 42</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">version_file</span>
-  <span class="ruby-identifier">configured_version_file</span> <span class="ruby-operator">||</span> <span class="ruby-constant">File</span>.<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;</span><span class="ruby-string">lib</span><span class="ruby-string">&quot;</span>, <span class="ruby-identifier">gem_name</span>, <span class="ruby-string">&quot;</span><span class="ruby-string">version.rb</span><span class="ruby-string">&quot;</span>)
+          <div class="method-source-code" id="targetable-3F-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 127</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">targetable?</span>
+  <span class="ruby-keyword">false</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -723,9 +755,60 @@
         <div class="method-description">
 
 
-          <p>Version-file path from explicit config or the resolved gem name.</p>
+          <p>Whether focused task accepts an exact target version argument.</p>
 
-<p>@return [String]</p>
+<p>@return [Boolean]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-task_arguments" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-task_arguments" title="Link to this method">
+                  <span class="method-name">task_arguments</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="task_arguments-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 143</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">task_arguments</span>
+  <span class="ruby-identifier">targetable?</span> <span class="ruby-operator">?</span> [<span class="ruby-value">:</span><span class="ruby-value">version</span>] <span class="ruby-operator">:</span> []
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Rake task argument names for the focused task.</p>
+
+<p>@return [Array&lt;Symbol&gt;]</p>
 
 
         </div>

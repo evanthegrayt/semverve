@@ -5,17 +5,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>class Semverve::Formats::SimpleString - RDoc Documentation</title>
+<title>class Semverve::VersionChecks::RailsConfigMetadataCheck - RDoc Documentation</title>
 
 
   <meta
     name="keywords"
-    content="ruby,class,Semverve::Formats::SimpleString"
+    content="ruby,class,Semverve::VersionChecks::RailsConfigMetadataCheck"
   >
 
     <meta
       name="description"
-      content="class Semverve::Formats::SimpleString: Handles version files that define a single top-level +VERSION+ string."
+      content="class Semverve::VersionChecks::RailsConfigMetadataCheck: Rails config metadata version check."
     >
 
 
@@ -24,11 +24,11 @@
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="class Semverve::Formats::SimpleString - RDoc Documentation">
+<meta property="og:title" content="class Semverve::VersionChecks::RailsConfigMetadataCheck - RDoc Documentation">
 
 
 
-    <meta property="og:description" content="Handles version files that define a single top-level +VERSION+ string.">
+    <meta property="og:description" content="Rails config metadata version check.">
 
 
 
@@ -36,11 +36,11 @@
 
 <!-- Twitter -->
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="class Semverve::Formats::SimpleString - RDoc Documentation">
+<meta name="twitter:title" content="class Semverve::VersionChecks::RailsConfigMetadataCheck - RDoc Documentation">
 
 
 
-    <meta name="twitter:description" content="Handles version files that define a single top-level +VERSION+ string.">
+    <meta name="twitter:description" content="Rails config metadata version check.">
 
 
 
@@ -389,7 +389,7 @@
         <svg><use href="#icon-chevron"></use></svg>
       </span>
     </summary>
-    <ul><li>Object</li></ul>
+    <ul><li><a href="Check.html">Semverve::VersionChecks::Check</a><ul><li>Object</li></ul></li></ul>
   </details>
 </div>
 
@@ -399,6 +399,25 @@
   
 
   
+  <div class="nav-section">
+    <details class="nav-section-collapsible" open>
+      <summary class="nav-section-header">
+        <span class="nav-section-icon">
+          <svg><use href="#icon-class-methods"></use></svg>
+        </span>
+        <span class="nav-section-title">Class Methods</span>
+        <span class="nav-section-chevron">
+          <svg><use href="#icon-chevron"></use></svg>
+        </span>
+      </summary>
+      <ul class="nav-list" role="directory">
+
+        <li ><a href="#method-c-new">new</a></li>
+
+      </ul>
+    </details>
+  </div>
+
 
 
   <div class="nav-section">
@@ -414,11 +433,21 @@
       </summary>
       <ul class="nav-list" role="directory">
 
-        <li ><a href="#method-i-generate">generate</a></li>
+        <li ><a href="#method-i-check_description">check_description</a></li>
 
-        <li ><a href="#method-i-parse">parse</a></li>
+        <li ><a href="#method-i-clean_message">clean_message</a></li>
 
-        <li ><a href="#method-i-replace">replace</a></li>
+        <li ><a href="#method-i-finding_label">finding_label</a></li>
+
+        <li ><a href="#method-i-findings">findings</a></li>
+
+        <li ><a href="#method-i-fix">fix</a></li>
+
+        <li ><a href="#method-i-fix_description">fix_description</a></li>
+
+        <li ><a href="#method-i-name">name</a></li>
+
+        <li ><a href="#method-i-task_name">task_name</a></li>
 
       </ul>
     </details>
@@ -443,7 +472,7 @@
 
 </nav>
 
-<main role="main" aria-labelledby="class-semverve-formats-simplestring">
+<main role="main" aria-labelledby="class-semverve-versionchecks-railsconfigmetadatacheck">
   
   
     <ol role="navigation" aria-label="Breadcrumb navigation" class="breadcrumb">
@@ -456,28 +485,28 @@
       
       <li>
         
-        <a href="../../Semverve/Formats.html">Formats</a><span class="separator">::</span>
+        <a href="../../Semverve/VersionChecks.html">VersionChecks</a><span class="separator">::</span>
         
       </li>
       
       <li>
         
-        <span>SimpleString</span>
+        <span>RailsConfigMetadataCheck</span>
         
       </li>
       
     </ol>
   
 
-  <span id="class-Semverve::Formats::SimpleString" class="legacy-anchor"></span>
-  <h1 id="class-semverve-formats-simplestring" class="anchor-link class page-title">
+  <span id="class-Semverve::VersionChecks::RailsConfigMetadataCheck" class="legacy-anchor"></span>
+  <h1 id="class-semverve-versionchecks-railsconfigmetadatacheck" class="anchor-link class page-title">
     <span class="page-title-kind">class</span>
-    <span class="page-title-name">Semverve::Formats::SimpleString</span>
+    <span class="page-title-name">Semverve::VersionChecks::RailsConfigMetadataCheck</span>
   </h1>
 
   <section class="description">
     
-<p>Handles version files that define a single top-level <code>VERSION</code> string.</p>
+<p>Rails config metadata version check.</p>
 
   </section>
 
@@ -489,31 +518,73 @@
 
 
 
-    <section class="constants-list">
-      <header>
-        <h3 id="untitled-constants"><a href="#untitled-constants">Constants</a></h3>
-      </header>
-      <dl>
-
-        <dt id="PATTERN">PATTERN</dt>
-
-        <dd>
-
-          <p>Pattern for locating a simple <code>VERSION</code> assignment.</p>
-
-<p>@return [Regexp]</p>
-        </dd>
 
 
-      </dl>
+
+
+
+
+
+     <section id="public-class-untitled-method-details" class="method-section anchor-link">
+       <header>
+         <h3 id="public-class-untitled-methods"><a href="#public-class-untitled-methods">Public Class Methods</a></h3>
+       </header>
+
+
+      <div id="method-c-new" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-c-new" title="Link to this method">
+                  <span class="method-name">new</span>
+                  <span class="method-args">(scanner: RailsConfigMetadata)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="new-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 445</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">initialize</span>(<span class="ruby-value">scanner:</span> <span class="ruby-constant">RailsConfigMetadata</span>)
+  <span class="ruby-ivar">@scanner</span> = <span class="ruby-identifier">scanner</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Initializes the check.</p>
+
+<p>@param [Class] scanner</p>
+
+<p>@return [Semverve::VersionChecks::RailsConfigMetadataCheck]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
     </section>
-
-
-
-
-
-
-
 
 
 
@@ -527,14 +598,14 @@
        </header>
 
 
-      <div id="method-i-generate" class="method-detail anchor-link ">
+      <div id="method-i-check_description" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
 
               <div class="method-heading">
-                <a href="#method-i-generate" title="Link to this method">
-                  <span class="method-name">generate</span>
-                  <span class="method-args">(version, module_name:)</span>
+                <a href="#method-i-check_description" title="Link to this method">
+                  <span class="method-name">check_description</span>
+                  <span class="method-args">()</span>
                 </a>
               </div>
 
@@ -552,23 +623,11 @@
         </div>
 
 
-          <div class="method-source-code" id="generate-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/formats/simple_string.rb, line 55</span>
-      <span class="ruby-keyword">def</span> <span class="ruby-identifier">generate</span>(<span class="ruby-identifier">version</span>, <span class="ruby-value">module_name:</span>)
-        <span class="ruby-string">&lt;&lt;~RUBY</span>
-<span class="ruby-string">          # frozen_string_literal: true</span>
-<span class="ruby-string"></span>
-<span class="ruby-string">          ##</span>
-<span class="ruby-string">          # Namespace for </span><span class="ruby-string">#{</span><span class="ruby-identifier">module_name</span><span class="ruby-string">}</span><span class="ruby-string">.</span>
-<span class="ruby-string">          module </span><span class="ruby-string">#{</span><span class="ruby-identifier">module_name</span><span class="ruby-string">}</span><span class="ruby-string"></span>
-<span class="ruby-string">            ##</span>
-<span class="ruby-string">            # Full gem version string.</span>
-<span class="ruby-string">            #</span>
-<span class="ruby-string">            # @return [String]</span>
-<span class="ruby-string">            VERSION = &quot;</span><span class="ruby-string">#{</span><span class="ruby-identifier">version</span><span class="ruby-string">}</span><span class="ruby-string">&quot;</span>
-<span class="ruby-string">          end</span>
-<span class="ruby-string">        RUBY</span>
-      <span class="ruby-keyword">end</span></pre>
+          <div class="method-source-code" id="check_description-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 469</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">check_description</span>
+  <span class="ruby-string">&quot;</span><span class="ruby-string">Check Rails config metadata for version mismatches</span><span class="ruby-string">&quot;</span>
+<span class="ruby-keyword">end</span></pre>
           </div>
 
 
@@ -576,9 +635,7 @@
         <div class="method-description">
 
 
-          <p>Generates a simple version file.</p>
-
-<p>@param [Semverve::SemanticVersion] version @param [String] module_name</p>
+          <p>Focused check task description.</p>
 
 <p>@return [String]</p>
 
@@ -592,14 +649,14 @@
       </div>
 
 
-      <div id="method-i-parse" class="method-detail anchor-link ">
+      <div id="method-i-clean_message" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
 
               <div class="method-heading">
-                <a href="#method-i-parse" title="Link to this method">
-                  <span class="method-name">parse</span>
-                  <span class="method-args">(content, path:)</span>
+                <a href="#method-i-clean_message" title="Link to this method">
+                  <span class="method-name">clean_message</span>
+                  <span class="method-args">()</span>
                 </a>
               </div>
 
@@ -617,14 +674,10 @@
         </div>
 
 
-          <div class="method-source-code" id="parse-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/formats/simple_string.rb, line 24</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">parse</span>(<span class="ruby-identifier">content</span>, <span class="ruby-value">path:</span>)
-  <span class="ruby-identifier">match</span> = <span class="ruby-identifier">content</span>.<span class="ruby-identifier">match</span>(<span class="ruby-constant">PATTERN</span>)
-
-  <span class="ruby-keyword">return</span> <span class="ruby-constant">SemanticVersion</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">match</span>[<span class="ruby-value">3</span>]) <span class="ruby-keyword">if</span> <span class="ruby-identifier">match</span>
-
-  <span class="ruby-identifier">raise</span> <span class="ruby-constant">Error</span>, <span class="ruby-string">&quot;</span><span class="ruby-string">Could not parse </span><span class="ruby-string">#{</span><span class="ruby-identifier">path</span><span class="ruby-string">}</span><span class="ruby-string"> as simple format. Expected VERSION = \&quot;MAJOR.MINOR.PATCH\&quot;.</span><span class="ruby-string">&quot;</span>
+          <div class="method-source-code" id="clean_message-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 493</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">clean_message</span>
+  <span class="ruby-string">&quot;</span><span class="ruby-string">Rails config metadata is current.</span><span class="ruby-string">&quot;</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -633,11 +686,9 @@
         <div class="method-description">
 
 
-          <p>Parses a semantic version from simple string content.</p>
+          <p>Message printed when no findings or replacements exist.</p>
 
-<p>@param [String] content @param [String] path</p>
-
-<p>@return [Semverve::SemanticVersion]</p>
+<p>@return [String]</p>
 
 
         </div>
@@ -649,14 +700,14 @@
       </div>
 
 
-      <div id="method-i-replace" class="method-detail anchor-link ">
+      <div id="method-i-finding_label" class="method-detail anchor-link ">
         <div class="method-header">
           <div class="method-heading-group">
 
               <div class="method-heading">
-                <a href="#method-i-replace" title="Link to this method">
-                  <span class="method-name">replace</span>
-                  <span class="method-args">(content, version, path:)</span>
+                <a href="#method-i-finding_label" title="Link to this method">
+                  <span class="method-name">finding_label</span>
+                  <span class="method-args">()</span>
                 </a>
               </div>
 
@@ -674,14 +725,10 @@
         </div>
 
 
-          <div class="method-source-code" id="replace-source">
-            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/formats/simple_string.rb, line 40</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">replace</span>(<span class="ruby-identifier">content</span>, <span class="ruby-identifier">version</span>, <span class="ruby-value">path:</span>)
-  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">content</span>.<span class="ruby-identifier">match?</span>(<span class="ruby-constant">PATTERN</span>)
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">Error</span>, <span class="ruby-string">&quot;</span><span class="ruby-string">Could not parse </span><span class="ruby-string">#{</span><span class="ruby-identifier">path</span><span class="ruby-string">}</span><span class="ruby-string"> as simple format. Expected VERSION = \&quot;MAJOR.MINOR.PATCH\&quot;.</span><span class="ruby-string">&quot;</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">content</span>.<span class="ruby-identifier">sub</span>(<span class="ruby-constant">PATTERN</span>) { <span class="ruby-string">&quot;</span><span class="ruby-string">#{</span><span class="ruby-identifier">$1</span><span class="ruby-string">}</span><span class="ruby-string">#{</span><span class="ruby-identifier">$2</span><span class="ruby-string">}</span><span class="ruby-string">#{</span><span class="ruby-identifier">version</span><span class="ruby-string">}</span><span class="ruby-string">#{</span><span class="ruby-identifier">$4</span><span class="ruby-string">}</span><span class="ruby-string">&quot;</span> }
+          <div class="method-source-code" id="finding_label-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 485</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">finding_label</span>
+  <span class="ruby-string">&quot;</span><span class="ruby-string">Rails config version</span><span class="ruby-string">&quot;</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
 
@@ -690,11 +737,260 @@
         <div class="method-description">
 
 
-          <p>Replaces the semantic version in simple string content.</p>
-
-<p>@param [String] content @param [Semverve::SemanticVersion] version @param [String] path</p>
+          <p>Label printed for Rails config metadata findings and replacements.</p>
 
 <p>@return [String]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-findings" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-findings" title="Link to this method">
+                  <span class="method-name">findings</span>
+                  <span class="method-args">(configuration, current_version, include_ignored: false, target_version: nil)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="findings-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 497</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">findings</span>(<span class="ruby-identifier">configuration</span>, <span class="ruby-identifier">current_version</span>, <span class="ruby-value">include_ignored:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">target_version:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">scanner</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">configuration</span>, <span class="ruby-identifier">current_version</span>).<span class="ruby-identifier">findings</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-fix" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-fix" title="Link to this method">
+                  <span class="method-name">fix</span>
+                  <span class="method-args">(configuration, current_version, target_version: nil)</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="fix-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 501</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">fix</span>(<span class="ruby-identifier">configuration</span>, <span class="ruby-identifier">current_version</span>, <span class="ruby-value">target_version:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">scanner</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">configuration</span>, <span class="ruby-identifier">current_version</span>).<span class="ruby-identifier">fix</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-fix_description" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-fix_description" title="Link to this method">
+                  <span class="method-name">fix_description</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="fix_description-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 477</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">fix_description</span>
+  <span class="ruby-string">&quot;</span><span class="ruby-string">Fix safe Rails config metadata version mismatches</span><span class="ruby-string">&quot;</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Focused fix task description.</p>
+
+<p>@return [String]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-name" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-name" title="Link to this method">
+                  <span class="method-name">name</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="name-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 453</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">name</span>
+  <span class="ruby-value">:</span><span class="ruby-value">rails_config_metadata</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Public check name used in <code>config.version_checks</code>.</p>
+
+<p>@return [Symbol]</p>
+
+
+        </div>
+
+
+
+
+
+      </div>
+
+
+      <div id="method-i-task_name" class="method-detail anchor-link ">
+        <div class="method-header">
+          <div class="method-heading-group">
+
+              <div class="method-heading">
+                <a href="#method-i-task_name" title="Link to this method">
+                  <span class="method-name">task_name</span>
+                  <span class="method-args">()</span>
+                </a>
+              </div>
+
+
+
+          </div>
+
+
+            <div class="method-controls">
+              <details class="method-source-toggle">
+                <summary><span class="method-source-icon" aria-hidden="true">{}</span> Source</summary>
+              </details>
+            </div>
+
+        </div>
+
+
+          <div class="method-source-code" id="task_name-source">
+            <pre class="ruby"><span class="ruby-comment"># File lib/semverve/version_checks.rb, line 461</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">task_name</span>
+  <span class="ruby-value">:</span><span class="ruby-value">rails_config_metadata</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+
+
+
+        <div class="method-description">
+
+
+          <p>Focused Rake task suffix.</p>
+
+<p>@return [Symbol]</p>
 
 
         </div>
