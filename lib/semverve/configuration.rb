@@ -2,9 +2,10 @@
 
 require "rake"
 
+require_relative "adapters"
 require_relative "error"
-require_relative "presets"
 require_relative "project_metadata"
+require_relative "version_checks"
 
 module Semverve
   ##
@@ -14,7 +15,13 @@ module Semverve
     # Version-maintenance surfaces supported by umbrella check and fix tasks.
     #
     # @return [Array<Symbol>]
-    VALID_VERSION_CHECKS = [:doc_references, :code_references, :metadata].freeze
+    VALID_VERSION_CHECKS = VersionChecks.names(extra_checks: Adapters.checks).freeze
+
+    ##
+    # Default version-maintenance surfaces for package projects.
+    #
+    # @return [Array<Symbol>]
+    DEFAULT_VERSION_CHECKS = VersionChecks.default_names.freeze
 
     ##
     # Release-readiness surfaces supported by release check tasks.
@@ -26,7 +33,13 @@ module Semverve
     # Default Ruby pattern for code version literals that are safe to rewrite.
     #
     # @return [Regexp]
-    DEFAULT_VERSION_CODE_REFERENCE_PATTERN = /^\s*(?:(?:[A-Z]\w*::)*(?:[A-Z]\w*VERSION[A-Z0-9_]*|VERSION)|(?:[a-z_]\w*|self)\.version)\s*=\s*(?<quote>["'])(?<version>\d+\.\d+\.\d+)\k<quote>/
+    DEFAULT_VERSION_CODE_REFERENCE_PATTERN = VersionCodeReferences::RUBY_ASSIGNMENT_PATTERN
+
+    ##
+    # Framework adapter used to apply project defaults.
+    #
+    # @return [Symbol, String, nil]
+    attr_reader :adapter
 
     ##
     # Whether increments should run +bundle lock+ after writing a version.
@@ -62,7 +75,9 @@ module Semverve
     # Framework preset used to apply project defaults.
     #
     # @return [Symbol, String, nil]
-    attr_reader :preset
+    def preset
+      adapter
+    end
 
     ##
     # Release-readiness surfaces run by the release check task.
@@ -127,7 +142,7 @@ module Semverve
       @bundle_lock = false
       @command_runner = ->(command) { system(command) }
       @format = :module
-      @preset = nil
+      @adapter = nil
       @rubygems_host = "https://rubygems.org"
       @version_code_reference_files = Rake::FileList[]
       self.version_code_reference_pattern = DEFAULT_VERSION_CODE_REFERENCE_PATTERN
@@ -139,7 +154,7 @@ module Semverve
       )
       @version_match_mode = :older
       self.release_checks = []
-      self.version_checks = VALID_VERSION_CHECKS
+      @version_checks = DEFAULT_VERSION_CHECKS
     end
 
     ##
@@ -178,7 +193,7 @@ module Semverve
     end
 
     ##
-    # Sets the gem name used for metadata checks.
+    # Sets the gem name used for package metadata checks.
     #
     # @param [String, nil] gem_name
     #
@@ -198,14 +213,24 @@ module Semverve
     end
 
     ##
+    # Sets the framework adapter used for project defaults.
+    #
+    # @param [Symbol, String, nil] adapter
+    #
+    # @return [Symbol, nil]
+    def adapter=(adapter)
+      @adapter_defaults = nil
+      @adapter = adapter.nil? ? nil : Adapters.fetch(adapter).name
+    end
+
+    ##
     # Sets the framework preset used for project defaults.
     #
     # @param [Symbol, String, nil] preset
     #
     # @return [Symbol, nil]
     def preset=(preset)
-      @preset_defaults = nil
-      @preset = preset.nil? ? nil : Presets.fetch(preset).name
+      self.adapter = preset
     end
 
     ##
@@ -256,7 +281,7 @@ module Semverve
     #
     # @return [Array<Symbol>]
     def version_checks=(checks)
-      @version_checks = normalize_version_checks(checks)
+      set_explicit(:version_checks, normalize_version_checks(checks))
     end
 
     ##
@@ -291,9 +316,17 @@ module Semverve
     # @return [Object]
     def resolved_value(attribute)
       return public_send(attribute) if explicit_attribute?(attribute)
-      return preset_defaults[attribute] if preset_defaults.key?(attribute)
+      return adapter_defaults[attribute] if adapter_defaults.key?(attribute)
 
       public_send(attribute)
+    end
+
+    ##
+    # Whether package names should be inferred from project files.
+    #
+    # @return [Boolean]
+    def infer_package_name?
+      Adapters.infer_package_name?(adapter)
     end
 
     ##
@@ -301,7 +334,7 @@ module Semverve
     #
     # @return [Array<Symbol>]
     def normalized_version_checks
-      normalize_version_checks(version_checks)
+      normalize_version_checks(resolved_value(:version_checks))
     end
 
     ##
@@ -319,15 +352,7 @@ module Semverve
     #
     # @return [Array<Symbol>]
     def normalize_version_checks(checks)
-      normalized_checks = Array(checks).map do |check|
-        check.respond_to?(:to_sym) ? check.to_sym : check
-      end
-      return normalized_checks if normalized_checks.all? { |check| VALID_VERSION_CHECKS.include?(check) }
-
-      invalid_checks = normalized_checks.reject { |check| VALID_VERSION_CHECKS.include?(check) }
-      valid_check_names = VALID_VERSION_CHECKS.map(&:inspect)
-      valid_checks = "#{valid_check_names[0...-1].join(", ")}, or #{valid_check_names.last}"
-      raise Error, "Unknown version check #{invalid_checks.map(&:inspect).join(", ")}. Use #{valid_checks}."
+      VersionChecks.normalize(checks, extra_checks: Adapters.checks)
     end
 
     ##
@@ -382,17 +407,17 @@ module Semverve
     #
     # @return [Object]
     def set_explicit(attribute, value)
-      @preset_defaults = nil
+      @adapter_defaults = nil
       @explicit_attributes << attribute unless explicit_attribute?(attribute)
       instance_variable_set(:"@#{attribute}", value)
     end
 
     ##
-    # Defaults supplied by the configured preset.
+    # Defaults supplied by the configured adapter.
     #
     # @return [Hash]
-    def preset_defaults
-      @preset_defaults ||= Presets.defaults_for(preset, self)
+    def adapter_defaults
+      @adapter_defaults ||= Adapters.defaults_for(adapter, self)
     end
   end
 
@@ -420,7 +445,7 @@ module Semverve
     ##
     # Resolved gem name.
     #
-    # @return [String]
+    # @return [String, nil]
     attr_reader :gem_name
 
     ##
@@ -489,7 +514,7 @@ module Semverve
     # @param [Boolean] bundle_lock
     # @param [#call] command_runner
     # @param [Symbol] format
-    # @param [String] gem_name
+    # @param [String, nil] gem_name
     # @param [String] module_name
     # @param [Array<Symbol>] release_checks
     # @param [String] root

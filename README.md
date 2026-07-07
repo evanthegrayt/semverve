@@ -34,6 +34,8 @@ and RDoc.
 You can view the documentation
 [here](https://evanthegrayt.github.io/semverve/).
 
+If you are upgrading across breaking changes, see [UPGRADING.md](UPGRADING.md).
+
 ## Installation
 Add the gem to your Gemfile:
 
@@ -62,8 +64,10 @@ rake semverve:check:references
 rake semverve:fix:references
 rake semverve:check:code
 rake semverve:fix:code
-rake semverve:check:metadata
-rake semverve:fix:metadata
+rake semverve:check:package_metadata
+rake semverve:fix:package_metadata
+rake semverve:check:rails_config_metadata
+rake semverve:fix:rails_config_metadata
 rake semverve:check:rubygems
 rake semverve:check:release
 ```
@@ -90,7 +94,7 @@ Semverve.configure do |config|
   config.bundle_lock = true
   config.version_file = "lib/my_gem/version.rb"
   config.module_name = "MyGem"
-  config.version_checks = [:doc_references, :code_references, :metadata]
+  config.version_checks = [:doc_references, :code_references, :package_metadata]
   config.release_checks = [:rubygems]
   config.rubygems_host = "https://rubygems.org"
   config.version_code_reference_files.append("lib/**/*.rb")
@@ -103,10 +107,11 @@ The core defaults are equivalent to:
 
 ```ruby
 Semverve.configure do |config|
+  config.adapter = nil
   config.format = :module
   config.bundle_lock = false
   config.root = Dir.pwd
-  config.version_checks = [:doc_references, :code_references, :metadata]
+  config.version_checks = [:doc_references, :code_references, :package_metadata]
   config.release_checks = []
   config.rubygems_host = "https://rubygems.org"
   config.version_match_mode = :older
@@ -124,7 +129,8 @@ end
 
 The empty `version_code_reference_files` default only applies to arbitrary code
 literal scanning. `rake semverve:check` still checks the resolved `.gemspec`
-version and matching `Gemfile.lock` entry through its default metadata check.
+version and matching `Gemfile.lock` entry through its default package metadata
+check.
 Release checks are empty by default because they may make network requests and
 are intended for release pipelines rather than every local or pull-request run.
 
@@ -169,6 +175,11 @@ Semverve::Task.new do |config|
 end
 ```
 
+## Framework adapters
+Framework adapters provide app-oriented defaults without requiring a gemspec or
+package identity. `config.adapter` is the preferred API; `config.preset` remains
+supported as a backward-compatible alias.
+
 ## Rails apps
 Rails applications do not need gem-style version files, but an application
 version can still be useful for release notes, support/debug screens,
@@ -176,17 +187,21 @@ deployment metadata, or API output.
 
 When Rails is loaded, Semverve's Railtie installs the same `semverve:*` Rake
 tasks for `bin/rails`/`rails` automatically. To use Rails-style defaults, set
-the Rails preset:
+the Rails adapter:
 
 ```ruby
 Semverve.configure do |config|
-  config.preset = :rails
+  config.adapter = :rails
 end
 ```
 
-The Rails preset uses `Rails.root`, stores the version in
+`config.preset = :rails` is still accepted for existing setups.
+
+The Rails adapter uses `Rails.root`, stores the version in
 `config/version.rb`, uses the `:simple` format, and infers the module name from
-your Rails application module when possible.
+your Rails application module when possible. Its default checks are app-oriented:
+documentation references, configured code literals, and optional Rails config
+metadata. It does not run package metadata checks unless you opt in.
 
 Generate the file with:
 
@@ -198,13 +213,48 @@ If your app keeps the version somewhere else, override the path:
 
 ```ruby
 Semverve.configure do |config|
-  config.preset = :rails
+  config.adapter = :rails
   config.version_file = "config/releases/version.rb"
 end
 ```
 
-Rails support is only a preset and a Railtie; Semverve does not require a dummy
+Rails support is only an adapter and a Railtie; Semverve does not require a dummy
 app, a Rails plugin layout, or a Rails dependency.
+
+Rails config metadata is optional. When present, Semverve checks safe literals
+in `config/application.rb`, `config/environments/*.rb`, and
+`config/initializers/**/*.rb`:
+
+```ruby
+config.x.version = "1.2.2"
+Rails.application.config.x.version = "1.2.2"
+```
+
+Dynamic assignments are treated as self-managed and left alone:
+
+```ruby
+config.x.version = Storefront::VERSION
+```
+
+Rails engines or apps that publish gems can opt into package metadata checks by
+setting `config.gem_name` and including `:package_metadata` in
+`config.version_checks`. Deployment and container metadata, such as Docker,
+Kamal, and Helm, are intentionally left for future adapter support.
+
+## Sinatra apps
+Sinatra applications can use the Sinatra adapter for app-style defaults:
+
+```ruby
+Semverve.configure do |config|
+  config.adapter = :sinatra
+end
+```
+
+The Sinatra adapter stores the version in `config/version.rb`, uses the
+`:simple` format, infers the module name from the project directory, and checks
+documentation references plus configured code literals by default. It does not
+infer a package name from `config/version.rb` and does not run package metadata
+checks unless you opt in.
 
 ## Formats
 The default `:module` format stores `MAJOR`, `MINOR`, and `PATCH` constants
@@ -329,11 +379,14 @@ rake semverve:check
 This task is designed for normal CI. It uses local project files, prints
 parseable findings, and exits non-zero when it finds drift.
 
-By default, this checks:
+By default, gem/package projects check:
 
 - README version references, plus any configured docs or comment files
 - configured code files for safe version literals
 - the gemspec version and `Gemfile.lock` entry
+
+Rails adapter projects instead check README references, configured code literals,
+and optional Rails config metadata.
 
 Findings are printed in parseable formats and the task exits non-zero:
 
@@ -355,11 +408,13 @@ Choose which surfaces the umbrella `check` and `fix` tasks run with
 
 ```ruby
 Semverve.configure do |config|
-  config.version_checks = [:doc_references, :metadata]
+  config.version_checks = [:doc_references, :package_metadata]
 end
 ```
 
-The allowed values are `:doc_references`, `:code_references`, and `:metadata`.
+The allowed values come from Semverve's check registry. Built-in checks are
+`:doc_references`, `:code_references`, and `:package_metadata`; framework
+adapters can add their own checks, such as Rails' `:rails_config_metadata`.
 
 Use focused tasks when you want only one surface:
 
@@ -368,12 +423,15 @@ rake semverve:check:references
 rake semverve:fix:references
 rake semverve:check:code
 rake semverve:fix:code
-rake semverve:check:metadata
-rake semverve:fix:metadata
+rake semverve:check:package_metadata
+rake semverve:fix:package_metadata
+rake semverve:check:rails_config_metadata
+rake semverve:fix:rails_config_metadata
 ```
 
-`semverve:fix:metadata` rewrites literal gemspec versions when safe and
-runs `bundle lock` for `Gemfile.lock` drift.
+`semverve:fix:package_metadata` rewrites literal gemspec versions when safe and
+runs `bundle lock` for `Gemfile.lock` drift. `semverve:fix:rails_config_metadata`
+rewrites safe Rails config version literals.
 
 Pass a semantic version when you want to check or fix only that exact version in
 doc references and code literals:
@@ -383,9 +441,55 @@ rake 'semverve:check[1.2.2]'
 rake 'semverve:fix:references[1.2.2]'
 ```
 
-Metadata checks still compare metadata to the current version. If you target the
-current version, check tasks list those matches but fix tasks are no-ops because
-the text is already current.
+Package metadata and adapter-owned metadata checks still compare metadata to the
+current version. If you target the current version, check tasks list
+reference/code matches but fix tasks are no-ops because the text is already
+current.
+
+## Extension API
+Semverve exposes small public objects for framework adapters and version checks.
+These APIs are intentionally local registration APIs; Semverve does not yet
+autoload third-party adapter gems.
+
+Register a framework adapter with `Semverve::Adapters.register`. An adapter
+must expose `name`, `defaults(configuration)`, and `checks`. It can also expose
+`infer_package_name?` to control whether app-style version files should be
+treated as package names.
+
+Register a check with `Semverve::VersionChecks.register`, or return adapter-owned
+checks from an adapter's `checks` method. A check object should expose:
+
+- `name` and `task_name`
+- `check_description`, `fix_description`, `finding_label`, and `fix_label`
+- `clean_message`, `targetable?`, and `exact_target_fix_noop_notice?`
+- `findings(configuration, current_version, include_ignored:, target_version:)`
+- `fix(configuration, current_version, target_version:)`
+
+Checks should return `Semverve::Finding` objects from `findings` and a
+`Semverve::FixResult` from `fix`. `Semverve::VersionMatchPolicy` and
+`Semverve::VersionLiteralRewriter` are available for checks that need Semverve's
+standard stale-version matching or named-capture literal rewriting.
+
+For example:
+
+```ruby
+class MyConfigVersionCheck < Semverve::VersionChecks::Check
+  def name = :my_config_metadata
+  def task_name = :my_config_metadata
+  def check_description = "Check app config metadata for version mismatches"
+  def fix_description = "Fix safe app config metadata version mismatches"
+  def finding_label = "app config version"
+  def clean_message = "App config metadata is current."
+
+  def findings(configuration, current_version, include_ignored: false, target_version: nil)
+    []
+  end
+
+  def fix(configuration, current_version, target_version: nil)
+    Semverve::FixResult.new(changed_files: [], replacement_count: 0)
+  end
+end
+```
 
 ### Version references
 Version references are prose-like references to versions. These are usually in
@@ -457,7 +561,7 @@ SEMVERVE_REPORT_IGNORED=true rake 'semverve:check[1.2.2]'
 
 ### Code version literals
 Code scanning is opt-in to avoid false positives. This is for arbitrary project
-code, not gem metadata. The default is:
+code, not package metadata. The default is:
 
 ```ruby
 Semverve.configure do |config|
@@ -532,14 +636,14 @@ The custom value must be a `Regexp` and must include a named capture called
 `rake semverve:fix:code`, and the captured value still has to parse as a
 semantic version.
 
-### Metadata
-Metadata checks are part of `rake semverve:check` by default. They compare the
-current version file against:
+### Package metadata
+Package metadata checks are part of `rake semverve:check` by default for
+gem/package projects. They compare the current version file against:
 
 - the resolved `.gemspec` version
 - the matching `Gemfile.lock` entry, when a lockfile exists
 
-Metadata always requires an exact match, regardless of
+Package metadata always requires an exact match, regardless of
 `config.version_match_mode`.
 
 No file-list configuration is needed for these checks. Semverve resolves the
@@ -565,8 +669,24 @@ Gem::Specification.new do |spec|
 end
 ```
 
-`rake semverve:fix:metadata` updates safe literal gemspec assignments and
+`rake semverve:fix:package_metadata` updates safe literal gemspec assignments and
 runs `bundle lock` when the lockfile has drifted.
+
+### Rails config metadata
+Rails config metadata checks are part of `rake semverve:check` when the Rails
+adapter is active. They scan `config/application.rb`,
+`config/environments/*.rb`, and `config/initializers/**/*.rb` for optional Rails
+config literals:
+
+```ruby
+config.x.version = "1.2.2"
+Rails.application.config.x.version = "1.2.2"
+```
+
+These checks always require an exact match with the current Semverve version.
+`rake semverve:fix:rails_config_metadata` rewrites only those safe string
+literals. Dynamic assignments, including `config.x.version = Storefront::VERSION`,
+are considered self-managed and ignored.
 
 ## Checking release readiness
 Release checks are separate from `rake semverve:check`. They are useful in CI,

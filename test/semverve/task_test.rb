@@ -44,12 +44,186 @@ module Semverve
         assert_not_nil Rake::Task["semverve:fix:references"]
         assert_not_nil Rake::Task["semverve:check:code"]
         assert_not_nil Rake::Task["semverve:fix:code"]
-        assert_not_nil Rake::Task["semverve:check:metadata"]
-        assert_not_nil Rake::Task["semverve:fix:metadata"]
+        assert_not_nil Rake::Task["semverve:check:package_metadata"]
+        assert_not_nil Rake::Task["semverve:fix:package_metadata"]
+        assert_not_nil Rake::Task["semverve:check:rails_config_metadata"]
+        assert_not_nil Rake::Task["semverve:fix:rails_config_metadata"]
         assert_not_nil Rake::Task["semverve:check:rubygems"]
         assert_not_nil Rake::Task["semverve:check:release"]
         assert_raise(RuntimeError) { Rake::Task["version:current"] }
       end
+    end
+
+    def test_version_check_registry_resolves_core_and_adapter_checks
+      core_check = VersionChecks.fetch(:doc_references, extra_checks: Adapters.checks)
+      rails_check = VersionChecks.fetch(:rails_config_metadata, extra_checks: Adapters.checks)
+
+      assert_equal :doc_references, core_check.name
+      assert_equal :rails_config_metadata, rails_check.name
+    end
+
+    def test_adapter_registry_exposes_framework_checks
+      rails_checks = Adapters.fetch(:rails).checks.map(&:name)
+      sinatra_checks = Adapters.fetch(:sinatra).checks.map(&:name)
+
+      assert_equal [:rails_config_metadata], rails_checks
+      assert_empty sinatra_checks
+    end
+
+    def test_finding_is_public_check_result_data
+      version = SemanticVersion.parse("1.2.3")
+      finding = Finding.new(path: "README.md", line: 2, column: 10, version: version)
+      labeled = Finding.new(path: "Gemfile.lock", line: 4, column: 13, version: version, label: "locked version")
+
+      assert_equal "README.md", finding.path
+      assert_equal 2, finding.line
+      assert_equal 10, finding.column
+      assert_equal version, finding.version
+      assert_nil finding.label
+      assert_equal "locked version", labeled.label
+    end
+
+    def test_fix_result_is_public_check_result_data
+      default_result = FixResult.new(changed_files: ["README.md"], replacement_count: 1)
+      bundle_result = FixResult.new(changed_files: [], replacement_count: 0, bundle_lock_ran: true)
+
+      assert_equal ["README.md"], default_result.changed_files
+      assert_equal 1, default_result.replacement_count
+      refute default_result.bundle_lock_ran
+      assert bundle_result.bundle_lock_ran
+    end
+
+    def test_version_match_policy_matches_older_non_current_and_exact_targets
+      current_version = SemanticVersion.parse("2.0.1")
+      older_version = SemanticVersion.parse("2.0.0")
+      newer_version = SemanticVersion.parse("2.0.2")
+
+      older_policy = VersionMatchPolicy.new(current_version: current_version, match_mode: :older)
+      non_current_policy = VersionMatchPolicy.new(current_version: current_version, match_mode: :non_current)
+      exact_policy = VersionMatchPolicy.new(
+        current_version: current_version,
+        match_mode: :older,
+        target_version: newer_version
+      )
+
+      assert older_policy.report?(older_version)
+      refute older_policy.report?(newer_version)
+      assert non_current_policy.report?(older_version)
+      assert non_current_policy.report?(newer_version)
+      refute non_current_policy.report?(current_version)
+      assert exact_policy.report?(newer_version)
+      refute exact_policy.report?(older_version)
+    end
+
+    def test_version_match_policy_rejects_unknown_modes
+      policy = VersionMatchPolicy.new(current_version: SemanticVersion.parse("2.0.1"), match_mode: :everything)
+
+      error = assert_raise(Error) { policy.report?(SemanticVersion.parse("2.0.0")) }
+
+      assert_equal "Unknown version match mode :everything. Use :older or :non_current.", error.message
+    end
+
+    def test_version_literal_rewriter_replaces_only_named_capture
+      rewriter = VersionLiteralRewriter.new(
+        pattern: /release\s+(?<quote>["'])(?<version>\d+\.\d+\.\d+)\k<quote>/,
+        replacement: "2.0.1"
+      )
+
+      assert_equal %(release "2.0.1"), rewriter.rewrite(%(release "2.0.0"))
+    end
+
+    def test_version_literal_rewriter_requires_named_capture
+      error = assert_raise(Error) do
+        VersionLiteralRewriter.new(pattern: /release\s+(\d+\.\d+\.\d+)/, replacement: "2.0.1")
+      end
+
+      assert_equal "version literal pattern must include a named capture called version.", error.message
+    end
+
+    def test_check_objects_accept_injected_scanners
+      scanner = Class.new do
+        class << self
+          attr_accessor :initialized_with
+        end
+
+        def initialize(configuration, current_version, include_ignored: false, target_version: nil)
+          self.class.initialized_with = [configuration, current_version, include_ignored, target_version]
+        end
+
+        def findings
+          [Finding.new(path: "README.md", line: 1, column: 1, version: SemanticVersion.parse("2.0.0"))]
+        end
+
+        def fix
+          FixResult.new(changed_files: ["README.md"], replacement_count: 1)
+        end
+      end
+      configuration = Object.new
+      current_version = SemanticVersion.parse("2.0.1")
+      target_version = SemanticVersion.parse("2.0.0")
+      check = VersionChecks::DocReferences.new(scanner: scanner)
+
+      findings = check.findings(configuration, current_version, include_ignored: true, target_version: target_version)
+      assert_equal [configuration, current_version, true, target_version], scanner.initialized_with
+
+      result = check.fix(configuration, current_version, target_version: target_version)
+
+      assert_instance_of Finding, findings.first
+      assert_instance_of FixResult, result
+      assert_equal [configuration, current_version, false, target_version], scanner.initialized_with
+    end
+
+    def test_check_surfaces_return_public_finding_and_fix_result_objects
+      in_project do
+        write_gemspec("my_gem", version: "2.0.0")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Install version 2.0.0.\n")
+        write_file(File.join("lib", "my_gem", "constants.rb"), "APP_VERSION = \"2.0.0\"\n")
+        write_file("config/application.rb", "config.x.version = \"2.0.0\"\n")
+
+        Semverve.configure do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        configuration = Semverve.configuration.resolved
+        current_version = SemanticVersion.parse("2.0.1")
+        checks = [
+          VersionReferences.new(configuration, current_version),
+          VersionCodeReferences.new(configuration, current_version),
+          RailsConfigMetadata.new(configuration, current_version),
+          PackageMetadata.new(configuration, current_version)
+        ]
+
+        checks.each do |check|
+          assert_instance_of Finding, check.findings.first
+          assert_instance_of FixResult, check.fix
+        end
+      end
+    end
+
+    def test_exact_target_fix_note_uses_check_api_not_labels
+      current_version = SemanticVersion.parse("2.0.1")
+      check = Class.new do
+        def exact_target_fix_noop_notice?
+          true
+        end
+      end.new
+      finding = Finding.new(path: "README.md", line: 1, column: 1, version: current_version)
+
+      stdout, _stderr, error = capture_error(Error) do
+        Task.new.send(
+          :report_findings,
+          [[check, "custom label", [finding]]],
+          current_version,
+          target_version: current_version,
+          fix_task_name: "semverve:fix",
+          clean_message: "clean"
+        )
+      end
+
+      assert_match(/README\.md:1:1: custom label 2\.0\.1 -> 2\.0\.1/, stdout)
+      assert_match(/semverve:fix\[2\.0\.1\] will not change these references/, stdout)
+      assert_equal "Found 1 version check issue.", error.message
     end
 
     def test_current_reads_module_format
@@ -343,8 +517,36 @@ module Semverve
 
           assert_equal :simple, resolved.format
           assert_equal "Storefront", resolved.module_name
+          assert_nil resolved.gem_name
           assert_equal File.expand_path(@tmpdir), resolved.root
+          assert_equal [:doc_references, :code_references, :rails_config_metadata], resolved.version_checks
           assert_equal File.join("config", "version.rb"), resolved.version_file
+        end
+      end
+    end
+
+    def test_rails_adapter_resolves_the_same_defaults_as_preset
+      in_project do
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          Semverve.configure do |config|
+            config.adapter = :rails
+          end
+
+          adapter_resolved = Semverve.configuration.resolved
+          reset_configuration
+
+          Semverve.configure do |config|
+            config.preset = :rails
+          end
+
+          preset_resolved = Semverve.configuration.resolved
+
+          assert_equal preset_resolved.format, adapter_resolved.format
+          assert_equal preset_resolved.module_name, adapter_resolved.module_name
+          assert_equal preset_resolved.gem_name, adapter_resolved.gem_name
+          assert_equal preset_resolved.root, adapter_resolved.root
+          assert_equal preset_resolved.version_checks, adapter_resolved.version_checks
+          assert_equal preset_resolved.version_file, adapter_resolved.version_file
         end
       end
     end
@@ -371,6 +573,7 @@ module Semverve
             config.format = :module
             config.module_name = "CustomApp"
             config.root = custom_root
+            config.version_checks = [:package_metadata]
             config.version_file = File.join("config", "releases", "version.rb")
           end
 
@@ -379,19 +582,65 @@ module Semverve
           assert_equal :module, resolved.format
           assert_equal "CustomApp", resolved.module_name
           assert_equal File.expand_path(custom_root), resolved.root
+          assert_equal [:package_metadata], resolved.version_checks
           assert_equal File.join("config", "releases", "version.rb"), resolved.version_file
         end
       end
     end
 
-    def test_unknown_preset_fails_loudly
+    def test_unknown_adapter_fails_loudly
       error = assert_raises(Error) do
         Semverve.configure do |config|
-          config.preset = :sinatra
+          config.adapter = :hanami
         end
       end
 
-      assert_equal "Unknown preset :sinatra. Use :rails.", error.message
+      assert_equal "Unknown adapter :hanami. Use :rails, or :sinatra.", error.message
+    end
+
+    def test_unknown_preset_uses_adapter_validation
+      error = assert_raises(Error) do
+        Semverve.configure do |config|
+          config.preset = :hanami
+        end
+      end
+
+      assert_equal "Unknown adapter :hanami. Use :rails, or :sinatra.", error.message
+    end
+
+    def test_sinatra_adapter_resolves_defaults_without_gemspec
+      in_project do
+        write_simple_version("SemverveTest", "2.0.1", path: File.join("config", "version.rb"))
+
+        Task.new do |config|
+          config.adapter = :sinatra
+        end
+
+        resolved = Semverve.configuration.resolved
+
+        assert_equal :simple, resolved.format
+        assert_equal camelize(File.basename(File.expand_path(Dir.pwd))), resolved.module_name
+        assert_nil resolved.gem_name
+        assert_equal File.expand_path(Dir.pwd), resolved.root
+        assert_equal [:doc_references, :code_references], resolved.version_checks
+        assert_equal File.join("config", "version.rb"), resolved.version_file
+        assert_equal "2.0.1\n", capture_stdout { Rake::Task["semverve:current"].invoke }
+      end
+    end
+
+    def test_sinatra_adapter_does_not_infer_config_as_gem_name
+      in_project do
+        write_simple_version("SemverveTest", "2.0.1", path: File.join("config", "version.rb"))
+        write_lockfile("config", "1.0.0")
+
+        Task.new do |config|
+          config.adapter = :sinatra
+        end
+
+        assert_nil Semverve.configuration.resolved.gem_name
+        assert_equal "Package metadata is current.\n",
+          capture_stdout { Rake::Task["semverve:check:package_metadata"].invoke }
+      end
     end
 
     def test_current_reads_rails_preset_without_gemspec
@@ -404,6 +653,23 @@ module Semverve
           end
 
           assert_equal "2.0.1\n", capture_stdout { Rake::Task["semverve:current"].invoke }
+        end
+      end
+    end
+
+    def test_rails_package_metadata_does_not_infer_config_as_gem_name
+      in_project do
+        write_simple_version("Storefront", "2.0.1", path: File.join("config", "version.rb"))
+        write_lockfile("config", "1.0.0")
+
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          Task.new do |config|
+            config.preset = :rails
+          end
+
+          assert_nil Semverve.configuration.resolved.gem_name
+          assert_equal "Package metadata is current.\n",
+            capture_stdout { Rake::Task["semverve:check:package_metadata"].invoke }
         end
       end
     end
@@ -1267,20 +1533,105 @@ module Semverve
       end
     end
 
-    def test_check_metadata_reports_literal_gemspec_mismatch
+    def test_check_rails_config_metadata_reports_config_x_version_literal
+      in_project do
+        write_simple_version("Storefront", "2.0.1", path: File.join("config", "version.rb"))
+        write_file("config/application.rb", "  config.x.version = \"2.0.0\"\n")
+
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          Task.new do |config|
+            config.preset = :rails
+          end
+
+          stdout, = capture_error(Error) { Rake::Task["semverve:check:rails_config_metadata"].invoke }
+
+          assert_match(%r{config/application\.rb:1:\d+: Rails config version 2\.0\.0 -> 2\.0\.1}, stdout)
+        end
+      end
+    end
+
+    def test_check_rails_config_metadata_reports_rails_application_config_literal
+      in_project do
+        write_simple_version("Storefront", "2.0.1", path: File.join("config", "version.rb"))
+        write_file("config/initializers/version.rb", "Rails.application.config.x.version = '2.0.0'\n")
+
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          Task.new do |config|
+            config.preset = :rails
+          end
+
+          stdout, = capture_error(Error) { Rake::Task["semverve:check:rails_config_metadata"].invoke }
+
+          assert_match(%r{config/initializers/version\.rb:1:\d+: Rails config version 2\.0\.0 -> 2\.0\.1}, stdout)
+        end
+      end
+    end
+
+    def test_fix_rails_config_metadata_rewrites_safe_literals
+      in_project do
+        write_simple_version("Storefront", "2.0.1", path: File.join("config", "version.rb"))
+        config_path = write_file("config/environments/production.rb", "  config.x.version = \"2.0.0\"\n")
+
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          Task.new do |config|
+            config.preset = :rails
+          end
+
+          stdout = capture_stdout { Rake::Task["semverve:fix:rails_config_metadata"].invoke }
+
+          assert_match(%r{Updated config/environments/production\.rb}, stdout)
+          assert_match(/Replaced 1 Rails config version\./, stdout)
+          assert_equal "  config.x.version = \"2.0.1\"\n", File.read(config_path)
+        end
+      end
+    end
+
+    def test_rails_config_metadata_ignores_dynamic_assignments
+      in_project do
+        write_simple_version("Storefront", "2.0.1", path: File.join("config", "version.rb"))
+        write_file("config/application.rb", "  config.x.version = Storefront::VERSION\n")
+
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          Task.new do |config|
+            config.preset = :rails
+          end
+
+          assert_equal "Rails config metadata is current.\n",
+            capture_stdout { Rake::Task["semverve:check:rails_config_metadata"].invoke }
+        end
+      end
+    end
+
+    def test_rails_config_metadata_allows_missing_assignment
+      in_project do
+        write_simple_version("Storefront", "2.0.1", path: File.join("config", "version.rb"))
+        write_file("config/application.rb", "  config.load_defaults 8.0\n")
+
+        with_stubbed_rails(root: @tmpdir, application: rails_application("Storefront")) do
+          Task.new do |config|
+            config.preset = :rails
+          end
+
+          assert_equal "Rails config metadata is current.\n",
+            capture_stdout { Rake::Task["semverve:check:rails_config_metadata"].invoke }
+        end
+      end
+    end
+
+    def test_check_package_metadata_reports_literal_gemspec_mismatch
       in_project do
         write_gemspec("my_gem", version: "2.0.0")
         write_module_version("MyGem", "2.0.1")
 
         Task.new
 
-        stdout, = capture_error(Error) { Rake::Task["semverve:check:metadata"].invoke }
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:package_metadata"].invoke }
 
         assert_match(/my_gem\.gemspec:\d+:\d+: gemspec version 2\.0\.0 -> 2\.0\.1/, stdout)
       end
     end
 
-    def test_check_metadata_uses_configured_gem_name_with_multiple_gemspecs
+    def test_check_package_metadata_uses_configured_gem_name_with_multiple_gemspecs
       in_project do
         write_gemspec("other_gem", version: "9.9.9")
         write_gemspec("my_gem", version: "2.0.0")
@@ -1290,14 +1641,14 @@ module Semverve
           config.gem_name = "my_gem"
         end
 
-        stdout, = capture_error(Error) { Rake::Task["semverve:check:metadata"].invoke }
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:package_metadata"].invoke }
 
         assert_match(/my_gem\.gemspec:\d+:\d+: gemspec version 2\.0\.0 -> 2\.0\.1/, stdout)
         assert_no_match(/other_gem\.gemspec/, stdout)
       end
     end
 
-    def test_check_metadata_reports_lockfile_mismatch
+    def test_check_package_metadata_reports_lockfile_mismatch
       in_project do
         write_gemspec("my_gem", version: "2.0.1")
         write_module_version("MyGem", "2.0.1")
@@ -1305,24 +1656,24 @@ module Semverve
 
         Task.new
 
-        stdout, = capture_error(Error) { Rake::Task["semverve:check:metadata"].invoke }
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:package_metadata"].invoke }
 
         assert_match(/Gemfile\.lock:4:13: locked version 2\.0\.0 -> 2\.0\.1/, stdout)
       end
     end
 
-    def test_check_metadata_allows_dynamic_gemspec_and_missing_lockfile
+    def test_check_package_metadata_allows_dynamic_gemspec_and_missing_lockfile
       in_project do
         write_module_version("MyGem", "2.0.1")
         write_gemspec("my_gem", dynamic: true)
 
         Task.new
 
-        assert_equal "Version metadata is current.\n", capture_stdout { Rake::Task["semverve:check:metadata"].invoke }
+        assert_equal "Package metadata is current.\n", capture_stdout { Rake::Task["semverve:check:package_metadata"].invoke }
       end
     end
 
-    def test_check_metadata_fix_rewrites_literal_gemspec_and_runs_bundle_lock
+    def test_check_package_metadata_fix_rewrites_literal_gemspec_and_runs_bundle_lock
       commands = []
 
       in_project do
@@ -1334,10 +1685,10 @@ module Semverve
           config.command_runner = ->(command) { commands << command }
         end
 
-        stdout = capture_stdout { Rake::Task["semverve:fix:metadata"].invoke }
+        stdout = capture_stdout { Rake::Task["semverve:fix:package_metadata"].invoke }
 
         assert_match(/Updated my_gem\.gemspec/, stdout)
-        assert_match(/Replaced 1 metadata version\./, stdout)
+        assert_match(/Replaced 1 package metadata version\./, stdout)
         assert_match(/Ran bundle lock\./, stdout)
         assert_match(/spec.version = "2\.0\.1"/, File.read(gemspec_path))
         assert_equal ["bundle lock"], commands
@@ -1396,7 +1747,7 @@ module Semverve
         write_file(File.join("lib", "my_gem", "constants.rb"), "APP_VERSION = \"2.0.0\"\n")
 
         Task.new do |config|
-          config.version_checks = [:doc_references, :metadata]
+          config.version_checks = [:doc_references, :package_metadata]
           config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
         end
 
@@ -1440,11 +1791,23 @@ module Semverve
       in_project do
         error = assert_raises(Error) do
           Task.new do |config|
-            config.version_checks = [:metadata, :everything]
+            config.version_checks = [:package_metadata, :everything]
           end
         end
 
-        assert_equal "Unknown version check :everything. Use :doc_references, :code_references, or :metadata.", error.message
+        assert_equal "Unknown version check :everything. Use :doc_references, :code_references, :package_metadata, or :rails_config_metadata.", error.message
+      end
+    end
+
+    def test_version_checks_rejects_removed_metadata_check
+      in_project do
+        error = assert_raises(Error) do
+          Task.new do |config|
+            config.version_checks = [:metadata]
+          end
+        end
+
+        assert_equal "Unknown version check :metadata. Use :doc_references, :code_references, :package_metadata, or :rails_config_metadata.", error.message
       end
     end
 

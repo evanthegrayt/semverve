@@ -4,7 +4,7 @@ require_relative "error"
 
 module Semverve
   ##
-  # Infers gem metadata from explicit configuration or project files.
+  # Infers project metadata from explicit configuration or project files.
   class ProjectMetadata
     ##
     # Initializes project metadata inference.
@@ -18,9 +18,12 @@ module Semverve
 
     ##
     # Gem name from explicit config, the version-file path, or the gemspec.
+    # App adapters can disable package-name inference.
     #
-    # @return [String]
+    # @return [String, nil]
     def gem_name
+      return explicit_gem_name || configured_gem_name unless configuration.infer_package_name?
+
       explicit_gem_name || configured_version_file_gem_name || gemspec_name
     end
 
@@ -57,7 +60,7 @@ module Semverve
     end
 
     ##
-    # Configured gem name after applying presets.
+    # Configured gem name after applying adapters.
     #
     # @return [String, nil]
     def configured_gem_name
@@ -73,7 +76,7 @@ module Semverve
     end
 
     ##
-    # Configured Ruby module name after applying presets.
+    # Configured Ruby module name after applying adapters.
     #
     # @return [String, nil]
     def configured_module_name
@@ -81,7 +84,7 @@ module Semverve
     end
 
     ##
-    # Configured version-file path after applying presets.
+    # Configured version-file path after applying adapters.
     #
     # @return [String, nil]
     def configured_version_file

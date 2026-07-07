@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require_relative "semverve/finding"
+require_relative "semverve/fix_result"
+require_relative "semverve/version_literal_rewriter"
+require_relative "semverve/version_match_policy"
 require_relative "semverve/configuration"
 require_relative "semverve/version"
 

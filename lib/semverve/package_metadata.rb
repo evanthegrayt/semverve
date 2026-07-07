@@ -1,14 +1,15 @@
 # frozen_string_literal: true
 
-require "bundler"
 require "rubygems"
 
+require_relative "finding"
+require_relative "fix_result"
 require_relative "semantic_version"
 
 module Semverve
   ##
-  # Checks generated gem metadata against the configured version file.
-  class VersionMetadata
+  # Checks generated package metadata against the configured version file.
+  class PackageMetadata
     ##
     # Literal gemspec version assignments that can be safely rewritten.
     #
@@ -16,117 +17,29 @@ module Semverve
     GEMSPEC_LITERAL_PATTERN = /^(\s*\w+\.version\s*=\s*)(["'])(\d+\.\d+\.\d+)(\2)/
 
     ##
-    # A metadata version mismatch.
-    class Finding
-      ##
-      # Path relative to the configured project root.
-      #
-      # @return [String]
-      attr_reader :path
-
-      ##
-      # One-based line number.
-      #
-      # @return [Integer]
-      attr_reader :line
-
-      ##
-      # One-based column number.
-      #
-      # @return [Integer]
-      attr_reader :column
-
-      ##
-      # Metadata semantic version.
-      #
-      # @return [Semverve::SemanticVersion]
-      attr_reader :version
-
-      ##
-      # Output label for the finding.
-      #
-      # @return [String]
-      attr_reader :label
-
-      ##
-      # Initializes a finding.
-      #
-      # @param [String] path
-      # @param [Integer] line
-      # @param [Integer] column
-      # @param [Semverve::SemanticVersion] version
-      # @param [String] label
-      #
-      # @return [Semverve::VersionMetadata::Finding]
-      def initialize(path:, line:, column:, version:, label:)
-        @path = path
-        @line = line
-        @column = column
-        @version = version
-        @label = label
-      end
-    end
-
-    ##
-    # Result of fixing metadata version mismatches.
-    class FixResult
-      ##
-      # Files changed by the fix.
-      #
-      # @return [Array<String>]
-      attr_reader :changed_files
-
-      ##
-      # Number of literal replacements made.
-      #
-      # @return [Integer]
-      attr_reader :replacement_count
-
-      ##
-      # Whether bundle lock was run.
-      #
-      # @return [Boolean]
-      attr_reader :bundle_lock_ran
-
-      ##
-      # Initializes a fix result.
-      #
-      # @param [Array<String>] changed_files
-      # @param [Integer] replacement_count
-      # @param [Boolean] bundle_lock_ran
-      #
-      # @return [Semverve::VersionMetadata::FixResult]
-      def initialize(changed_files:, replacement_count:, bundle_lock_ran:)
-        @changed_files = changed_files
-        @replacement_count = replacement_count
-        @bundle_lock_ran = bundle_lock_ran
-      end
-    end
-
-    ##
-    # Initializes metadata version checking.
+    # Initializes package metadata version checking.
     #
     # @param [Semverve::ResolvedConfiguration] configuration
     # @param [Semverve::SemanticVersion] current_version
     #
-    # @return [Semverve::VersionMetadata]
+    # @return [Semverve::PackageMetadata]
     def initialize(configuration, current_version)
       @configuration = configuration
       @current_version = current_version
     end
 
     ##
-    # Metadata mismatches.
+    # Package metadata mismatches.
     #
-    # @return [Array<Semverve::VersionMetadata::Finding>]
+    # @return [Array<Semverve::Finding>]
     def findings
       [gemspec_finding, lockfile_finding].compact
     end
 
     ##
-    # Fixes safe metadata mismatches.
+    # Fixes safe package metadata mismatches.
     #
-    # @return [Semverve::VersionMetadata::FixResult]
+    # @return [Semverve::FixResult]
     def fix
       changed_files = []
       replacement_count = fix_gemspec_literal
@@ -135,7 +48,7 @@ module Semverve
 
       bundle_lock_ran = lockfile_finding ? run_bundle_lock : false
 
-      FixResult.new(
+      Semverve::FixResult.new(
         changed_files: changed_files,
         replacement_count: replacement_count,
         bundle_lock_ran: bundle_lock_ran
@@ -151,7 +64,7 @@ module Semverve
     attr_reader :configuration
 
     ##
-    # Current gem version.
+    # Current package version.
     #
     # @return [Semverve::SemanticVersion]
     attr_reader :current_version
@@ -167,14 +80,14 @@ module Semverve
     ##
     # Finding for a gemspec mismatch.
     #
-    # @return [Semverve::VersionMetadata::Finding, nil]
+    # @return [Semverve::Finding, nil]
     def gemspec_finding
       return unless gemspec_file && gemspec_version
       return if gemspec_version == current_version
 
       line, column = gemspec_position
 
-      Finding.new(
+      Semverve::Finding.new(
         path: relative_path(gemspec_file),
         line: line,
         column: column,
@@ -186,7 +99,7 @@ module Semverve
     ##
     # Finding for a lockfile mismatch.
     #
-    # @return [Semverve::VersionMetadata::Finding, nil]
+    # @return [Semverve::Finding, nil]
     def lockfile_finding
       return unless File.file?(lockfile_path)
 
@@ -196,7 +109,7 @@ module Semverve
 
       line, column = lockfile_position(version)
 
-      Finding.new(
+      Semverve::Finding.new(
         path: "Gemfile.lock",
         line: line,
         column: column,
@@ -210,6 +123,8 @@ module Semverve
     #
     # @return [String, nil]
     def gemspec_file
+      return unless configuration.gem_name
+
       @gemspec_file ||= begin
         files = Dir.glob(File.join(root, "*.gemspec"))
 
@@ -271,18 +186,14 @@ module Semverve
     #
     # @return [Semverve::SemanticVersion, nil]
     def lockfile_version
-      spec = lockfile_parser.specs.find { |candidate| candidate.name == configuration.gem_name }
-      return unless spec
+      return unless configuration.gem_name
 
-      SemanticVersion.parse(spec.version.to_s)
-    end
+      File.readlines(lockfile_path).each do |line|
+        match = line.match(lockfile_line_pattern)
+        return SemanticVersion.parse(match[:version]) if match
+      end
 
-    ##
-    # Parsed Gemfile.lock.
-    #
-    # @return [Bundler::LockfileParser]
-    def lockfile_parser
-      Bundler::LockfileParser.new(File.read(lockfile_path))
+      nil
     end
 
     ##
@@ -292,14 +203,23 @@ module Semverve
     #
     # @return [Array(Integer, Integer)]
     def lockfile_position(version)
-      pattern = /^\s*#{Regexp.escape(configuration.gem_name)}\s+\(#{Regexp.escape(version.to_s)}\)/
-
       File.readlines(lockfile_path).each_with_index do |line, index|
-        match = line.match(pattern)
+        match = line.match(lockfile_line_pattern(version))
         return [index + 1, line.index(version.to_s) + 1] if match
       end
 
       [1, 1]
+    end
+
+    ##
+    # Gemfile.lock line pattern for the configured package.
+    #
+    # @param [Semverve::SemanticVersion, nil] version
+    #
+    # @return [Regexp]
+    def lockfile_line_pattern(version = nil)
+      version_pattern = version ? Regexp.escape(version.to_s) : "\\d+\\.\\d+\\.\\d+"
+      /^\s*#{Regexp.escape(configuration.gem_name)}\s+\((?<version>#{version_pattern})\)/
     end
 
     ##
