@@ -95,7 +95,7 @@ Semverve.configure do |config|
   config.rubygems_host = "https://rubygems.org"
   config.version_code_reference_files.append("lib/**/*.rb")
   config.version_doc_reference_files.append("doc/**/*.md")
-  config.version_reference_mode = :non_current
+  config.version_match_mode = :non_current
 end
 ```
 
@@ -109,7 +109,7 @@ Semverve.configure do |config|
   config.version_checks = [:doc_references, :code_references, :metadata]
   config.release_checks = []
   config.rubygems_host = "https://rubygems.org"
-  config.version_reference_mode = :older
+  config.version_match_mode = :older
   config.version_code_reference_files = Rake::FileList[]
   config.version_code_reference_pattern =
     /^\s*(?:(?:[A-Z]\w*::)*(?:[A-Z]\w*VERSION[A-Z0-9_]*|VERSION)|(?:[a-z_]\w*|self)\.version)\s*=\s*(?<quote>["'])(?<version>\d+\.\d+\.\d+)\k<quote>/
@@ -375,6 +375,18 @@ rake semverve:fix:metadata
 `semverve:fix:metadata` rewrites literal gemspec versions when safe and
 runs `bundle lock` for `Gemfile.lock` drift.
 
+Pass a semantic version when you want to check or fix only that exact version in
+doc references and code literals:
+
+```sh
+rake 'semverve:check[1.2.2]'
+rake 'semverve:fix:references[1.2.2]'
+```
+
+Metadata checks still compare metadata to the current version. If you target the
+current version, check tasks list those matches but fix tasks are no-ops because
+the text is already current.
+
 ### Version references
 Version references are prose-like references to versions. These are usually in
 README files, docs, guides, or comments. By default, Semverve scans README files
@@ -410,20 +422,21 @@ end
 Ruby files are scanned only in comments. Text files with `.md`, `.markdown`,
 `.txt`, `.rdoc`, and `.adoc` extensions are scanned as full text.
 
-The default reference mode is `:older`, which flags only semantic versions lower
-than the current version:
+The default version match mode is `:older`, which flags only semantic versions
+lower than the current version in doc references and code literals:
 
 ```ruby
 Semverve.configure do |config|
-  config.version_reference_mode = :older
+  config.version_match_mode = :older
 end
 ```
 
-Use `:non_current` when every reference should match the current version:
+Use `:non_current` when every doc reference and code literal should match the
+current version:
 
 ```ruby
 Semverve.configure do |config|
-  config.version_reference_mode = :non_current
+  config.version_match_mode = :non_current
 end
 ```
 
@@ -439,6 +452,7 @@ check tasks:
 
 ```sh
 SEMVERVE_REPORT_IGNORED=true rake semverve:check
+SEMVERVE_REPORT_IGNORED=true rake 'semverve:check[1.2.2]'
 ```
 
 ### Code version literals
@@ -526,7 +540,7 @@ current version file against:
 - the matching `Gemfile.lock` entry, when a lockfile exists
 
 Metadata always requires an exact match, regardless of
-`config.version_reference_mode`.
+`config.version_match_mode`.
 
 No file-list configuration is needed for these checks. Semverve resolves the
 gemspec from the project root and reads `Gemfile.lock` when one exists.
