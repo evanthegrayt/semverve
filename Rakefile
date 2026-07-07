@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "lib/semverve/task"
-require_relative "lib/semverve/docs_publisher/task"
 require "bundler/gem_tasks"
 require "rdoc/task"
 require "rake/testtask"
@@ -23,8 +22,6 @@ Semverve::Task.new do |t|
   t.bundle_lock = true
   t.version_code_reference_files.append("lib/**/*.rb", "semverve.gemspec", "Rakefile")
 end
-
-Semverve::DocsPublisher::Task.new
 
 standardrb = ->(*args) do
   sh(["bundle", "exec", "standardrb", *args].join(" "))
