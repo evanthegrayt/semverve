@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "json"
 require "stringio"
 require "tmpdir"
 
@@ -45,6 +46,8 @@ module Semverve
         assert_not_nil Rake::Task["semverve:fix:code"]
         assert_not_nil Rake::Task["semverve:check:metadata"]
         assert_not_nil Rake::Task["semverve:fix:metadata"]
+        assert_not_nil Rake::Task["semverve:check:rubygems"]
+        assert_not_nil Rake::Task["semverve:check:release"]
         assert_raise(RuntimeError) { Rake::Task["version:current"] }
       end
     end
@@ -129,9 +132,7 @@ module Semverve
 
         Task.new
 
-        stdout = with_env("VERSION" => "2.3.4") do
-          capture_stdout { Rake::Task["semverve:set"].invoke }
-        end
+        stdout = capture_stdout { Rake::Task["semverve:set"].invoke("2.3.4") }
 
         assert_equal "Updating to version 2.3.4 (was 2.0.1)\n", stdout
         assert_match(/MAJOR = 2/, File.read(path))
@@ -147,9 +148,7 @@ module Semverve
 
         Task.new { |config| config.format = :simple }
 
-        stdout = with_env("VERSION" => "2.3.4") do
-          capture_stdout { Rake::Task["semverve:set"].invoke }
-        end
+        stdout = capture_stdout { Rake::Task["semverve:set"].invoke("2.3.4") }
 
         assert_equal "Updating to version 2.3.4 (was 2.0.1)\n", stdout
         assert_match(/VERSION = "2.3.4"/, File.read(path))
@@ -164,7 +163,22 @@ module Semverve
         Task.new
 
         error = assert_raise(Error) { Rake::Task["semverve:set"].invoke }
-        assert_equal "Set VERSION=MAJOR.MINOR.PATCH.", error.message
+        assert_equal "Run rake 'semverve:set[MAJOR.MINOR.PATCH]'.", error.message
+      end
+    end
+
+    def test_set_ignores_env_version
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        error = with_env("SEMVERVE_VERSION" => "2.3.4") do
+          assert_raise(Error) { Rake::Task["semverve:set"].invoke }
+        end
+
+        assert_equal "Run rake 'semverve:set[MAJOR.MINOR.PATCH]'.", error.message
       end
     end
 
@@ -175,9 +189,7 @@ module Semverve
 
         Task.new
 
-        error = with_env("VERSION" => "nope") do
-          assert_raise(Error) { Rake::Task["semverve:set"].invoke }
-        end
+        error = assert_raise(Error) { Rake::Task["semverve:set"].invoke("nope") }
 
         assert_match(/Expected a semantic version/, error.message)
       end
@@ -190,9 +202,7 @@ module Semverve
 
         Task.new
 
-        stdout, stderr = with_env("VERSION" => "1.9.9") do
-          capture_output { Rake::Task["semverve:set"].invoke }
-        end
+        stdout, stderr = capture_output { Rake::Task["semverve:set"].invoke("1.9.9") }
 
         assert_equal "Updating to version 1.9.9 (was 2.0.1)\n", stdout
         assert_equal "Warning: updating to version 1.9.9, which is lower than the current version 2.0.1.\n", stderr
@@ -215,9 +225,7 @@ module Semverve
           config.command_runner = ->(command) { commands << command }
         end
 
-        stdout, stderr = with_env("VERSION" => "2.0.1") do
-          capture_output { Rake::Task["semverve:set"].invoke }
-        end
+        stdout, stderr = capture_output { Rake::Task["semverve:set"].invoke("2.0.1") }
 
         assert_equal "Version is already 2.0.1\n", stdout
         assert_empty stderr
@@ -238,9 +246,7 @@ module Semverve
           config.command_runner = ->(command) { commands << command }
         end
 
-        with_env("VERSION" => "2.0.2") do
-          capture_stdout { Rake::Task["semverve:set"].invoke }
-        end
+        capture_stdout { Rake::Task["semverve:set"].invoke("2.0.2") }
 
         assert_equal ["bundle lock"], commands
       end
@@ -419,17 +425,33 @@ module Semverve
       end
     end
 
-    def test_generate_accepts_env_version_and_simple_format
+    def test_generate_accepts_version_and_format_arguments
       in_project do
         write_gemspec("my_gem")
 
         Task.new
 
-        with_env("VERSION" => "1.2.3", "FORMAT" => "simple") do
+        capture_stdout { Rake::Task["semverve:generate"].invoke("1.2.3", "simple") }
+
+        assert_match(/VERSION = "1.2.3"/, File.read(File.join(@tmpdir, "lib", "my_gem", "version.rb")))
+      end
+    end
+
+    def test_generate_ignores_env_version_and_format
+      in_project do
+        write_gemspec("my_gem")
+
+        Task.new
+
+        with_env("SEMVERVE_VERSION" => "1.2.3", "SEMVERVE_FORMAT" => "simple") do
           capture_stdout { Rake::Task["semverve:generate"].invoke }
         end
 
-        assert_match(/VERSION = "1.2.3"/, File.read(File.join(@tmpdir, "lib", "my_gem", "version.rb")))
+        content = File.read(File.join(@tmpdir, "lib", "my_gem", "version.rb"))
+        assert_match(/module MyGem/, content)
+        assert_match(/MAJOR = 0/, content)
+        assert_match(/MINOR = 1/, content)
+        assert_match(/PATCH = 0/, content)
       end
     end
 
@@ -452,13 +474,79 @@ module Semverve
 
         Task.new
 
-        with_env("VERSION" => "1.2.3", "FORCE" => "true") do
-          capture_stdout { Rake::Task["semverve:generate"].invoke }
-        end
+        capture_stdout { Rake::Task["semverve:generate"].invoke("1.2.3", "simple", "force") }
+
+        assert_match(/VERSION = "1\.2\.3"/, File.read(path))
+      end
+    end
+
+    def test_generate_accepts_force_token_without_version_or_format
+      in_project do
+        write_gemspec("my_gem")
+        path = write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        capture_stdout { Rake::Task["semverve:generate"].invoke("force") }
+
+        assert_match(/MAJOR = 0/, File.read(path))
+        assert_match(/MINOR = 1/, File.read(path))
+        assert_match(/PATCH = 0/, File.read(path))
+      end
+    end
+
+    def test_generate_accepts_force_token_after_version
+      in_project do
+        write_gemspec("my_gem")
+        path = write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        capture_stdout { Rake::Task["semverve:generate"].invoke("1.2.3", "force") }
 
         assert_match(/MAJOR = 1/, File.read(path))
         assert_match(/MINOR = 2/, File.read(path))
         assert_match(/PATCH = 3/, File.read(path))
+      end
+    end
+
+    def test_generate_ignores_env_force
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        error = with_env("SEMVERVE_FORCE" => "true") do
+          assert_raise(Error) { Rake::Task["semverve:generate"].invoke }
+        end
+
+        assert_match(/semverve:generate\[force\]/, error.message)
+      end
+    end
+
+    def test_generate_rejects_boolean_force_argument
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        error = assert_raise(Error) { Rake::Task["semverve:generate"].invoke("1.2.3", "simple", "true") }
+
+        assert_equal "Run rake 'semverve:generate[VERSION,FORMAT,force]'.", error.message
+      end
+    end
+
+    def test_generate_rejects_extra_non_force_arguments
+      in_project do
+        write_gemspec("my_gem")
+
+        Task.new
+
+        error = assert_raise(Error) { Rake::Task["semverve:generate"].invoke("1.2.3", "simple", "later") }
+
+        assert_equal "Run rake 'semverve:generate[VERSION,FORMAT,force]'.", error.message
       end
     end
 
@@ -701,6 +789,29 @@ module Semverve
       end
     end
 
+    def test_check_reports_ignored_reference_findings_when_requested
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", <<~MARKDOWN)
+          Same line 1.0.0. <!-- semverve:ignore-version-reference -->
+          <!-- semverve:ignore-version-reference -->
+
+          Previous marker ignores 1.5.0.
+        MARKDOWN
+
+        Task.new
+
+        stdout, _stderr, error = with_env("SEMVERVE_REPORT_IGNORED" => "true") do
+          capture_error(Error) { Rake::Task["semverve:check:references"].invoke }
+        end
+
+        assert_match(/README\.md:1:11: version reference 1\.0\.0 -> 2\.0\.1/, stdout)
+        assert_match(/README\.md:4:25: version reference 1\.5\.0 -> 2\.0\.1/, stdout)
+        assert_equal "Found 2 version check issues.", error.message
+      end
+    end
+
     def test_check_reports_clean_doc_reference_files
       in_project do
         write_gemspec("my_gem")
@@ -766,6 +877,79 @@ module Semverve
         assert_match(/Replaced 1 code version literal\./, stdout)
         assert_match(/APP_VERSION = "2\.0\.1"/, File.read(path))
         assert_match(/EXAMPLE = "1\.0\.0"/, File.read(path))
+      end
+    end
+
+    def test_check_code_honors_inline_ignore_markers
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          IGNORED_VERSION = "2.0.0" # semverve:ignore-version-reference
+          # semverve:ignore-version-reference
+          PREVIOUS_IGNORED_VERSION = "2.0.0"
+          APP_VERSION = "2.0.0"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:code"].invoke }
+
+        assert_no_match(%r{lib/my_gem/constants\.rb:1:20: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+        assert_no_match(%r{lib/my_gem/constants\.rb:3:29: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+        assert_match(%r{lib/my_gem/constants\.rb:4:16: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+      end
+    end
+
+    def test_check_code_reports_ignored_findings_when_requested
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          IGNORED_VERSION = "2.0.0" # semverve:ignore-version-reference
+          # semverve:ignore-version-reference
+          PREVIOUS_IGNORED_VERSION = "2.0.0"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        stdout, _stderr, error = with_env("SEMVERVE_REPORT_IGNORED" => "true") do
+          capture_error(Error) { Rake::Task["semverve:check:code"].invoke }
+        end
+
+        assert_match(%r{lib/my_gem/constants\.rb:1:20: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+        assert_match(%r{lib/my_gem/constants\.rb:3:29: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+        assert_equal "Found 2 version check issues.", error.message
+      end
+    end
+
+    def test_check_code_fix_honors_inline_ignore_markers
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        path = write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          IGNORED_VERSION = "2.0.0" # semverve:ignore-version-reference
+          # semverve:ignore-version-reference
+          PREVIOUS_IGNORED_VERSION = "2.0.0"
+          APP_VERSION = "2.0.0"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+        end
+
+        stdout = capture_stdout { Rake::Task["semverve:fix:code"].invoke }
+        content = File.read(path)
+
+        assert_match(%r{Updated lib/my_gem/constants\.rb}, stdout)
+        assert_match(/Replaced 1 code version literal\./, stdout)
+        assert_match(/IGNORED_VERSION = "2\.0\.0"/, content)
+        assert_match(/PREVIOUS_IGNORED_VERSION = "2\.0\.0"/, content)
+        assert_match(/APP_VERSION = "2\.0\.1"/, content)
       end
     end
 
@@ -994,6 +1178,93 @@ module Semverve
       end
     end
 
+    def test_release_checks_default_to_empty
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        assert_equal "Release checks passed.\n", capture_stdout { Rake::Task["semverve:check:release"].invoke }
+      end
+    end
+
+    def test_check_release_runs_configured_rubygems_check
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new do |config|
+          config.release_checks = [:rubygems]
+        end
+
+        with_stubbed_rubygems_response(200, [{"number" => "2.0.0"}]) do
+          assert_equal "Release checks passed.\n", capture_stdout { Rake::Task["semverve:check:release"].invoke }
+        end
+      end
+    end
+
+    def test_check_release_fails_when_configured_rubygems_check_finds_current_version
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new do |config|
+          config.release_checks = ["rubygems"]
+        end
+
+        with_stubbed_rubygems_response(200, [{"number" => "2.0.1"}]) do
+          error = assert_raise(Error) { Rake::Task["semverve:check:release"].invoke }
+
+          assert_equal "my_gem 2.0.1 already exists on https://rubygems.org.", error.message
+        end
+      end
+    end
+
+    def test_check_rubygems_runs_even_when_release_checks_are_empty
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        with_stubbed_rubygems_response(200, [{"number" => "2.0.0"}]) do
+          assert_equal(
+            "my_gem 2.0.1 is not published on https://rubygems.org.\n",
+            capture_stdout { Rake::Task["semverve:check:rubygems"].invoke }
+          )
+        end
+      end
+    end
+
+    def test_check_does_not_run_release_checks
+      in_project do
+        write_gemspec("my_gem", dynamic: true)
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Install version 2.0.1.\n")
+
+        Task.new do |config|
+          config.release_checks = [:rubygems]
+        end
+
+        with_stubbed_rubygems_network_error(RuntimeError.new("release check should not run")) do
+          assert_equal "Version checks passed.\n", capture_stdout { Rake::Task["semverve:check"].invoke }
+        end
+      end
+    end
+
+    def test_release_checks_rejects_unknown_checks
+      in_project do
+        error = assert_raises(Error) do
+          Task.new do |config|
+            config.release_checks = [:rubygems, :everything]
+          end
+        end
+
+        assert_equal "Unknown release check :everything. Use :rubygems.", error.message
+      end
+    end
+
     def test_check_fix_dispatches_all_fixers
       commands = []
 
@@ -1121,6 +1392,29 @@ module Semverve
       FileUtils.mkdir_p(File.dirname(full_path))
       File.write(full_path, content)
       full_path
+    end
+
+    def with_stubbed_rubygems_response(code, body)
+      response = Struct.new(:code, :body).new(code.to_s, JSON.generate(body))
+      original = PublishedVersion.http_getter
+
+      PublishedVersion.http_getter = ->(_uri) { response }
+
+      yield
+    ensure
+      PublishedVersion.http_getter = original
+    end
+
+    def with_stubbed_rubygems_network_error(error)
+      original = PublishedVersion.http_getter
+
+      PublishedVersion.http_getter = ->(_uri) do
+        raise error
+      end
+
+      yield
+    ensure
+      PublishedVersion.http_getter = original
     end
 
     def underscore(value)

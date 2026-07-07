@@ -15,7 +15,7 @@ module Semverve
     # Minor version.
     #
     # @return [Integer]
-    MINOR = 1
+    MINOR = 2
 
     ##
     # Patch version.

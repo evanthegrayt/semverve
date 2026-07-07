@@ -11,21 +11,25 @@ module Semverve
   # Generates new Ruby version files from Semverve configuration.
   class Generator
     ##
-    # Default version used when +VERSION+ is not provided.
+    # Default version used when a version argument is not provided.
     #
     # @return [String]
-    DEFAULT_VERSION = "0.1.0"
+    DEFAULT_VERSION = "0.1.0" # semverve:ignore-version-reference
 
     ##
     # Initializes a version-file generator.
     #
     # @param [Semverve::ResolvedConfiguration] configuration
-    # @param [#fetch] env
+    # @param [String, nil] version
+    # @param [String, Symbol, nil] format
+    # @param [Boolean] force
     #
     # @return [Semverve::Generator]
-    def initialize(configuration, env = ENV)
+    def initialize(configuration, version: nil, format: nil, force: false)
       @configuration = configuration
-      @env = env
+      @version = version
+      @format = format
+      @force = force
     end
 
     ##
@@ -33,12 +37,12 @@ module Semverve
     #
     # @return [String]
     def generate
-      version = SemanticVersion.parse(env.fetch("VERSION", DEFAULT_VERSION))
-      format = Formats.fetch(env.fetch("FORMAT", configuration.format))
+      version = SemanticVersion.parse(requested_version)
+      format = Formats.fetch(requested_format)
       path = configuration.absolute_version_file
 
       if File.exist?(path) && !force?
-        raise Error, "Version file already exists at #{path}. Set FORCE=true to overwrite it."
+        raise Error, "Version file already exists at #{path}. Run rake 'semverve:generate[force]' to overwrite it."
       end
 
       FileUtils.mkdir_p(File.dirname(path))
@@ -53,14 +57,30 @@ module Semverve
     # Resolved configuration used for generation.
     #
     # @return [Semverve::ResolvedConfiguration]
-    attr_reader :configuration, :env
+    attr_reader :configuration, :version, :format, :force
+
+    ##
+    # Requested version or default.
+    #
+    # @return [String]
+    def requested_version
+      version || DEFAULT_VERSION
+    end
+
+    ##
+    # Requested format or configured default.
+    #
+    # @return [String, Symbol]
+    def requested_format
+      format || configuration.format
+    end
 
     ##
     # Whether generation should overwrite an existing version file.
     #
     # @return [Boolean]
     def force?
-      env.fetch("FORCE", "false").match?(/\A(true|1|yes)\z/i)
+      force
     end
   end
 end

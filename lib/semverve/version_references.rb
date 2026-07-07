@@ -107,9 +107,10 @@ module Semverve
     # @param [Semverve::SemanticVersion] current_version
     #
     # @return [Semverve::VersionReferences]
-    def initialize(configuration, current_version)
+    def initialize(configuration, current_version, include_ignored: false)
       @configuration = configuration
       @current_version = current_version
+      @include_ignored = include_ignored
     end
 
     ##
@@ -155,6 +156,12 @@ module Semverve
     #
     # @return [Semverve::SemanticVersion]
     attr_reader :current_version
+
+    ##
+    # Whether ignored references should be included in findings.
+    #
+    # @return [Boolean]
+    attr_reader :include_ignored
 
     ##
     # Absolute configured project root.
@@ -346,7 +353,7 @@ module Semverve
     #
     # @return [Array<Hash>]
     def references_for_segment(segment, content)
-      return [] if ignored_line?(segment[:line], content)
+      return [] if !include_ignored && ignored_line?(segment[:line], content)
 
       segment[:text].to_enum(:scan, VERSION_PATTERN).filter_map do
         match = Regexp.last_match

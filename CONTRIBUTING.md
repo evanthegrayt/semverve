@@ -123,7 +123,7 @@ bundle exec rake semverve:current
 bundle exec rake semverve:increment:patch
 bundle exec rake semverve:increment:minor
 bundle exec rake semverve:increment:major
-bundle exec rake semverve:set VERSION=x.y.z
+bundle exec rake 'semverve:set[x.y.z]'
 bundle exec rake semverve:check
 bundle exec rake semverve:fix
 ```
