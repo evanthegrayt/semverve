@@ -75,26 +75,10 @@ bundle exec rake rdoc:coverage
 
 RDoc uses `README.md` as the main page and documents files under `lib/**/*.rb`.
 Generated documentation is written to `docs/`, which is ignored on development
-branches. The generated site is maintained on the `gh-pages` branch for GitHub
-Pages.
-
-Publish generated docs with:
-
-```sh
-bundle exec rake docs:publish
-```
-
-That task runs `rerdoc`, opens `gh-pages` in a temporary Git worktree, copies
-the generated `docs/` output there, commits changed docs, pushes to
-`origin/gh-pages`, and removes the temporary worktree. To preview whether
-publishing would change the docs branch without committing or pushing, run:
-
-```sh
-bundle exec rake docs:publish:dry_run
-```
+branches.
 
 Keep public RDoc comments current as code changes so `bundle exec rake
-rdoc:coverage` stays clean and the published API docs remain useful.
+rdoc:coverage` stays clean and the API docs remain useful.
 
 When changing behavior, update the README at the same time. The README is the
 primary user guide, so examples should match real task names, configuration
@@ -166,7 +150,6 @@ bundle exec rake standard
 bundle exec rake rdoc:coverage
 bundle exec rake rerdoc
 bundle exec rake build
-bundle exec rake docs:publish:dry_run
 ```
 
 The build task writes the packaged gem under `pkg/`. Inspect the package if you
