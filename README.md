@@ -336,12 +336,12 @@ If your gemspec dynamically requires the generated version file, a brand-new
 project can fail before `semverve:generate` has a chance to run:
 
 ```ruby
-require_relative "lib/docstor/version"
+require_relative "lib/my_gem/version"
 ```
 
 Rake loads the Rakefile before it can invoke any task. If loading the Rakefile
 also loads `bundler/gem_tasks`, Bundler evaluates the gemspec, and an
-unconditional `require_relative` can crash because `lib/docstor/version.rb` does
+unconditional `require_relative` can crash because `lib/my_gem/version.rb` does
 not exist yet.
 
 Prefer guarding Bundler's gem tasks while running `semverve:generate`:
@@ -365,21 +365,9 @@ rake semverve:generate
 After generation, you can keep the guard or switch back to your normal dynamic
 gemspec loading style.
 
-Alternatively, make the gemspec tolerate the missing file during bootstrap:
-
-```ruby
-version_path = File.expand_path("lib/docstor/version", __dir__)
-require version_path if File.file?("#{version_path}.rb")
-
-Gem::Specification.new do |spec|
-  spec.name = "docstor"
-  spec.version = defined?(Docstor::VERSION) ? Docstor::VERSION : "0.0.0"
-end
-```
-
 Semverve's metadata inference does not evaluate the gemspec for generation; it
 reads the literal `spec.name`, so either bootstrap pattern still allows
-`semverve:generate` to infer `lib/docstor/version.rb`.
+`semverve:generate` to infer `lib/my_gem/version.rb`.
 
 ## Incrementing
 ```sh
