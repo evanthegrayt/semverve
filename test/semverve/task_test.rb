@@ -782,6 +782,44 @@ module Semverve
       end
     end
 
+    def test_generate_infers_gem_name_from_dynamic_gemspec_with_missing_version_file
+      in_project do
+        write_gemspec("my_gem", dynamic: true)
+
+        Task.new
+
+        output = capture_stdout { Rake::Task["semverve:generate"].invoke }
+        path = File.realpath(File.join(@tmpdir, "lib", "my_gem", "version.rb"))
+
+        assert_match(/Generated #{Regexp.escape(path)}/, output)
+        assert_match(/module MyGem/, File.read(path))
+      end
+    end
+
+    def test_generate_can_bootstrap_when_rakefile_guards_bundler_gem_tasks
+      in_project do
+        write_gemspec("docstor", dynamic: true)
+        write_file("Rakefile", <<~RUBY)
+          require "semverve/task"
+
+          unless ARGV.any? { |arg| arg.start_with?("semverve:generate") }
+            require "bundler/gem_tasks"
+          end
+
+          Semverve::Task.new
+        RUBY
+
+        with_argv(["semverve:generate"]) do
+          load File.join(@tmpdir, "Rakefile")
+          output = capture_stdout { Rake::Task["semverve:generate"].invoke }
+          path = File.realpath(File.join(@tmpdir, "lib", "docstor", "version.rb"))
+
+          assert_match(/Generated #{Regexp.escape(path)}/, output)
+          assert_match(/module Docstor/, File.read(path))
+        end
+      end
+    end
+
     def test_generate_accepts_version_and_format_arguments
       in_project do
         write_gemspec("my_gem")
@@ -2180,6 +2218,15 @@ module Semverve
           ENV[key] = value
         end
       end
+    end
+
+    def with_argv(values)
+      original = ARGV.dup
+      ARGV.replace(values)
+
+      yield
+    ensure
+      ARGV.replace(original)
     end
   end
 end
