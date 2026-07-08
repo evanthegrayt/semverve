@@ -569,6 +569,40 @@ module Semverve
       end
     end
 
+    def test_configuration_resolves_version_reference_ignores
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new do |config|
+          config.version_reference_ignores = {
+            "README.md" => {
+              42 => ["1.2.3"],
+              45 => "2.0.0"
+            }
+          }
+        end
+
+        assert_equal({
+          "README.md" => {
+            42 => ["1.2.3"],
+            45 => "2.0.0"
+          }
+        }, Semverve.configuration.resolved.version_reference_ignores)
+      end
+    end
+
+    def test_configuration_defaults_version_reference_ignores_to_empty_hash
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new
+
+        assert_equal({}, Semverve.configuration.resolved.version_reference_ignores)
+      end
+    end
+
     def test_explicit_version_file_works_without_gemspec
       in_project do
         custom_path = File.join("custom", "version.rb")
@@ -1370,6 +1404,77 @@ module Semverve
       end
     end
 
+    def test_check_honors_configured_reference_ignores
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Ignore 1.0.0 but catch 1.5.0 on the same line.\n")
+
+        Task.new do |config|
+          config.version_reference_ignores = {
+            "README.md" => {
+              1 => "1.0.0"
+            }
+          }
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:references"].invoke }
+
+        assert_no_match(/1\.0\.0/, stdout)
+        assert_match(/README\.md:1:\d+: version reference 1\.5\.0 -> 2\.0\.1/, stdout)
+      end
+    end
+
+    def test_check_reports_configured_ignored_reference_findings_when_requested
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file("README.md", "Configured ignore 1.0.0.\n")
+
+        Task.new do |config|
+          config.version_reference_ignores = {
+            "README.md" => {
+              1 => ["1.0.0"]
+            }
+          }
+        end
+
+        stdout, _stderr, error = with_env("SEMVERVE_REPORT_IGNORED" => "true") do
+          capture_error(Error) { Rake::Task["semverve:check:references"].invoke }
+        end
+
+        assert_match(/README\.md:1:19: version reference 1\.0\.0 -> 2\.0\.1/, stdout)
+        assert_equal "Found 1 version check issue.", error.message
+      end
+    end
+
+    def test_check_fix_honors_configured_reference_ignores
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        readme_path = write_file("README.md", <<~MARKDOWN)
+          Configured ignore 1.0.0.
+          Fix this 1.5.0.
+        MARKDOWN
+
+        Task.new do |config|
+          config.version_reference_ignores = {
+            "README.md" => {
+              1 => "1.0.0"
+            }
+          }
+        end
+
+        stdout = capture_stdout { Rake::Task["semverve:fix:references"].invoke }
+        content = File.read(readme_path)
+
+        assert_match(/Updated README\.md/, stdout)
+        assert_match(/Replaced 1 version reference\./, stdout)
+        assert_match(/Configured ignore 1\.0\.0\./, content)
+        assert_match(/Fix this 2\.0\.1\./, content)
+      end
+    end
+
     def test_check_reports_clean_doc_reference_files
       in_project do
         write_gemspec("my_gem")
@@ -1555,6 +1660,57 @@ module Semverve
       end
     end
 
+    def test_check_code_honors_configured_reference_ignores
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          IGNORED_VERSION = "2.0.0"
+          APP_VERSION = "2.0.0"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+          config.version_reference_ignores = {
+            File.join("lib", "my_gem", "constants.rb") => {
+              1 => ["2.0.0"]
+            }
+          }
+        end
+
+        stdout, = capture_error(Error) { Rake::Task["semverve:check:code"].invoke }
+
+        assert_no_match(%r{lib/my_gem/constants\.rb:1:20: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+        assert_match(%r{lib/my_gem/constants\.rb:2:16: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+      end
+    end
+
+    def test_check_code_reports_configured_ignored_findings_when_requested
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          IGNORED_VERSION = "2.0.0"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+          config.version_reference_ignores = {
+            File.join("lib", "my_gem", "constants.rb") => {
+              1 => "2.0.0"
+            }
+          }
+        end
+
+        stdout, _stderr, error = with_env("SEMVERVE_REPORT_IGNORED" => "true") do
+          capture_error(Error) { Rake::Task["semverve:check:code"].invoke }
+        end
+
+        assert_match(%r{lib/my_gem/constants\.rb:1:20: code version literal 2\.0\.0 -> 2\.0\.1}, stdout)
+        assert_equal "Found 1 version check issue.", error.message
+      end
+    end
+
     def test_check_code_fix_honors_inline_ignore_markers
       in_project do
         write_gemspec("my_gem")
@@ -1577,6 +1733,34 @@ module Semverve
         assert_match(/Replaced 1 code version literal\./, stdout)
         assert_match(/IGNORED_VERSION = "2\.0\.0"/, content)
         assert_match(/PREVIOUS_IGNORED_VERSION = "2\.0\.0"/, content)
+        assert_match(/APP_VERSION = "2\.0\.1"/, content)
+      end
+    end
+
+    def test_check_code_fix_honors_configured_reference_ignores
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+        path = write_file(File.join("lib", "my_gem", "constants.rb"), <<~RUBY)
+          IGNORED_VERSION = "2.0.0"
+          APP_VERSION = "2.0.0"
+        RUBY
+
+        Task.new do |config|
+          config.version_code_reference_files = Rake::FileList["lib/**/*.rb"]
+          config.version_reference_ignores = {
+            File.join("lib", "my_gem", "constants.rb") => {
+              1 => "2.0.0"
+            }
+          }
+        end
+
+        stdout = capture_stdout { Rake::Task["semverve:fix:code"].invoke }
+        content = File.read(path)
+
+        assert_match(%r{Updated lib/my_gem/constants\.rb}, stdout)
+        assert_match(/Replaced 1 code version literal\./, stdout)
+        assert_match(/IGNORED_VERSION = "2\.0\.0"/, content)
         assert_match(/APP_VERSION = "2\.0\.1"/, content)
       end
     end

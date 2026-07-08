@@ -158,6 +158,7 @@ module Semverve
         version_code_reference_files: Rake::FileList[],
         version_code_reference_pattern: VersionCodeReferences::RUBY_ASSIGNMENT_PATTERN,
         version_doc_reference_files: Rake::FileList[],
+        version_reference_ignores: {},
         version_match_mode: :older
       )
     end

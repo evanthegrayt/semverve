@@ -21,7 +21,14 @@ end
 Semverve::Task.new do |config|
   config.task_namespace = :version
   config.bundle_lock = true
-  config.version_code_reference_files.append("lib/**/*.rb", "semverve.gemspec", "Rakefile")
+  config.version_code_reference_files.append(
+    "lib/**/*.rb",
+    "semverve.gemspec",
+    "Rakefile"
+  )
+  config.version_reference_ignores = {
+    "README.md" => {380 => "0.0.0"}
+  }
 end
 
 standardrb = ->(*args) do

@@ -5,6 +5,7 @@ require_relative "finding"
 require_relative "fix_result"
 require_relative "semantic_version"
 require_relative "version_literal_rewriter"
+require_relative "version_reference_ignores"
 require_relative "version_match_policy"
 
 module Semverve
@@ -55,7 +56,7 @@ module Semverve
 
       files.each do |path|
         content = File.read(path)
-        fixed, count = fixed_content(content)
+        fixed, count = fixed_content(path, content)
 
         next if count.zero?
 
@@ -137,6 +138,7 @@ module Semverve
 
         version = SemanticVersion.parse(match[:version])
         next unless report?(version)
+        next if !include_ignored && configured_ignore?(path, line_number, version)
 
         Semverve::Finding.new(
           path: relative_path(path),
@@ -150,10 +152,11 @@ module Semverve
     ##
     # Fixed content and replacement count.
     #
+    # @param [String] path
     # @param [String] content
     #
     # @return [Array(String, Integer)]
-    def fixed_content(content)
+    def fixed_content(path, content)
       replacement_count = 0
       lines = content.lines
 
@@ -165,6 +168,7 @@ module Semverve
 
         version = SemanticVersion.parse(match[:version])
         next line unless report?(version)
+        next line if configured_ignore?(path, line_number, version)
 
         replacement_count += 1
         replace_matched_version(line)
@@ -188,6 +192,18 @@ module Semverve
       previous_nonblank_line = lines[0...(line_number - 1)].reverse_each.find { |candidate| !candidate.strip.empty? }
       # rubocop:enable Style/ReverseFind
       previous_nonblank_line&.include?(IGNORE_MARKER)
+    end
+
+    ##
+    # Whether a finding is configured as ignored.
+    #
+    # @param [String] path
+    # @param [Integer] line
+    # @param [Semverve::SemanticVersion] version
+    #
+    # @return [Boolean]
+    def configured_ignore?(path, line, version)
+      reference_ignores.ignored?(path: relative_path(path), line: line, version: version)
     end
 
     ##
@@ -240,6 +256,14 @@ module Semverve
     # @return [Semverve::VersionLiteralRewriter]
     def literal_rewriter
       @literal_rewriter ||= VersionLiteralRewriter.new(pattern: pattern, replacement: current_version)
+    end
+
+    ##
+    # Configured file/line/version ignores.
+    #
+    # @return [Semverve::VersionReferenceIgnores]
+    def reference_ignores
+      @reference_ignores ||= VersionReferenceIgnores.new(configuration.version_reference_ignores)
     end
   end
 end
