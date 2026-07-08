@@ -31,4 +31,5 @@ module Semverve
   end
 end
 
+require_relative "semverve/version_audit"
 require_relative "semverve/railtie" if defined?(::Rails::Railtie)

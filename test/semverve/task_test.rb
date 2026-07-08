@@ -54,6 +54,57 @@ module Semverve
       end
     end
 
+    def test_task_file_does_not_install_tasks_until_task_is_initialized
+      assert_raise(RuntimeError) { Rake::Task["semverve:current"] }
+    end
+
+    def test_defines_tasks_under_configured_namespace
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new { |config| config.task_namespace = :version }
+
+        assert_not_nil Rake::Task["version:current"]
+        assert_not_nil Rake::Task["version:set"]
+        assert_not_nil Rake::Task["version:increment:patch"]
+        assert_not_nil Rake::Task["version:check:references"]
+        assert_not_nil Rake::Task["version:fix:references"]
+        assert_not_nil Rake::Task["version:check:release"]
+        assert_raise(RuntimeError) { Rake::Task["semverve:current"] }
+        assert_equal "2.0.1\n", capture_stdout { Rake::Task["version:current"].invoke }
+      end
+    end
+
+    def test_configured_namespace_is_used_in_task_help_messages
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new { |config| config.task_namespace = "version" }
+
+        set_error = assert_raise(Error) { Rake::Task["version:set"].invoke }
+        assert_equal "Run rake 'version:set[MAJOR.MINOR.PATCH]'.", set_error.message
+
+        check_error = assert_raise(Error) { Rake::Task["version:check"].invoke("nope") }
+        assert_equal "Run rake 'version:check[MAJOR.MINOR.PATCH]'.", check_error.message
+
+        generate_error = assert_raise(Error) { Rake::Task["version:generate"].invoke }
+        assert_match(/version:generate\[force\]/, generate_error.message)
+      end
+    end
+
+    def test_configured_namespace_is_used_in_missing_version_file_help
+      in_project do
+        write_gemspec("my_gem")
+
+        Task.new { |config| config.task_namespace = :version }
+
+        error = assert_raise(Error) { Rake::Task["version:current"].invoke }
+        assert_match(/Run rake version:generate/, error.message)
+      end
+    end
+
     def test_version_check_registry_resolves_core_and_adapter_checks
       core_check = VersionChecks.fetch(:doc_references, extra_checks: Adapters.checks)
       rails_check = VersionChecks.fetch(:rails_config_metadata, extra_checks: Adapters.checks)
@@ -209,16 +260,21 @@ module Semverve
         end
       end.new
       finding = Finding.new(path: "README.md", line: 1, column: 1, version: current_version)
+      result = VersionAudit::CheckResult.new(
+        current_version: current_version,
+        target_version: current_version,
+        groups: [
+          VersionAudit::FindingGroup.new(
+            check: check,
+            label: "custom label",
+            findings: [finding]
+          )
+        ],
+        clean_message: "clean"
+      )
 
       stdout, _stderr, error = capture_error(Error) do
-        Task.new.send(
-          :report_findings,
-          [[check, "custom label", [finding]]],
-          current_version,
-          target_version: current_version,
-          fix_task_name: "semverve:fix",
-          clean_message: "clean"
-        )
+        TaskReporter.new.report_check(result, fix_task_name: "semverve:fix")
       end
 
       assert_match(/README\.md:1:1: custom label 2\.0\.1 -> 2\.0\.1/, stdout)
@@ -491,6 +547,28 @@ module Semverve
       end
     end
 
+    def test_configure_before_task_initialization_sets_task_configuration
+      in_project do
+        write_gemspec("ignored_name")
+        custom_path = File.join("custom", "version.rb")
+        write_simple_version("CustomGem", "1.2.3", path: custom_path)
+
+        Semverve.configure do |config|
+          config.task_namespace = :version
+          config.gem_name = "custom_gem"
+          config.module_name = "CustomGem"
+          config.version_file = custom_path
+          config.format = :simple
+        end
+
+        Task.new
+
+        assert_not_nil Rake::Task["version:current"]
+        assert_raise(RuntimeError) { Rake::Task["semverve:current"] }
+        assert_equal "1.2.3\n", capture_stdout { Rake::Task["version:current"].invoke }
+      end
+    end
+
     def test_explicit_version_file_works_without_gemspec
       in_project do
         custom_path = File.join("custom", "version.rb")
@@ -701,6 +779,44 @@ module Semverve
         assert_match(/MAJOR = 0/, File.read(path))
         assert_match(/MINOR = 1/, File.read(path))
         assert_match(/PATCH = 0/, File.read(path))
+      end
+    end
+
+    def test_generate_infers_gem_name_from_dynamic_gemspec_with_missing_version_file
+      in_project do
+        write_gemspec("my_gem", dynamic: true)
+
+        Task.new
+
+        output = capture_stdout { Rake::Task["semverve:generate"].invoke }
+        path = File.realpath(File.join(@tmpdir, "lib", "my_gem", "version.rb"))
+
+        assert_match(/Generated #{Regexp.escape(path)}/, output)
+        assert_match(/module MyGem/, File.read(path))
+      end
+    end
+
+    def test_generate_can_bootstrap_when_rakefile_guards_bundler_gem_tasks
+      in_project do
+        write_gemspec("docstor", dynamic: true)
+        write_file("Rakefile", <<~RUBY)
+          require "semverve/task"
+
+          unless ARGV.any? { |arg| arg.start_with?("semverve:generate") }
+            require "bundler/gem_tasks"
+          end
+
+          Semverve::Task.new
+        RUBY
+
+        with_argv(["semverve:generate"]) do
+          load File.join(@tmpdir, "Rakefile")
+          output = capture_stdout { Rake::Task["semverve:generate"].invoke }
+          path = File.realpath(File.join(@tmpdir, "lib", "docstor", "version.rb"))
+
+          assert_match(/Generated #{Regexp.escape(path)}/, output)
+          assert_match(/module Docstor/, File.read(path))
+        end
       end
     end
 
@@ -2102,6 +2218,15 @@ module Semverve
           ENV[key] = value
         end
       end
+    end
+
+    def with_argv(values)
+      original = ARGV.dup
+      ARGV.replace(values)
+
+      yield
+    ensure
+      ARGV.replace(original)
     end
   end
 end

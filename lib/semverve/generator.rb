@@ -42,7 +42,7 @@ module Semverve
       path = configuration.absolute_version_file
 
       if File.exist?(path) && !force?
-        raise Error, "Version file already exists at #{path}. Run rake 'semverve:generate[force]' to overwrite it."
+        raise Error, "Version file already exists at #{path}. Run rake '#{configuration.task_namespace}:generate[force]' to overwrite it."
       end
 
       FileUtils.mkdir_p(File.dirname(path))

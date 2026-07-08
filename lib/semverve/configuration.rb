@@ -104,6 +104,12 @@ module Semverve
     attr_reader :version_file
 
     ##
+    # Rake namespace used when installing Semverve tasks.
+    #
+    # @return [String, Symbol]
+    attr_accessor :task_namespace
+
+    ##
     # Code files to scan for safe version literals.
     #
     # @return [Rake::FileList]
@@ -144,6 +150,7 @@ module Semverve
       @format = :module
       @adapter = nil
       @rubygems_host = "https://rubygems.org"
+      @task_namespace = :semverve
       @version_code_reference_files = Rake::FileList[]
       self.version_code_reference_pattern = DEFAULT_VERSION_CODE_REFERENCE_PATTERN
       @version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
@@ -173,6 +180,7 @@ module Semverve
         release_checks: normalized_release_checks,
         root: expanded_root,
         rubygems_host: rubygems_host,
+        task_namespace: normalized_task_namespace,
         version_file: metadata.version_file,
         version_checks: normalized_version_checks,
         version_code_reference_files: version_code_reference_files,
@@ -346,6 +354,17 @@ module Semverve
     end
 
     ##
+    # Configured Rake task namespace normalized for task-name interpolation.
+    #
+    # @return [String]
+    def normalized_task_namespace
+      namespace = task_namespace.to_s
+      raise Error, "task_namespace must not be empty." if namespace.empty?
+
+      namespace
+    end
+
+    ##
     # Normalizes and validates umbrella version checks.
     #
     # @param [Array<Symbol, String>] checks
@@ -473,6 +492,12 @@ module Semverve
     attr_reader :rubygems_host
 
     ##
+    # Resolved Rake task namespace.
+    #
+    # @return [String]
+    attr_reader :task_namespace
+
+    ##
     # Resolved version-file path relative to the project root.
     #
     # @return [String]
@@ -519,6 +544,7 @@ module Semverve
     # @param [Array<Symbol>] release_checks
     # @param [String] root
     # @param [String] rubygems_host
+    # @param [String] task_namespace
     # @param [String] version_file
     # @param [Array<Symbol>] version_checks
     # @param [Rake::FileList] version_code_reference_files
@@ -536,6 +562,7 @@ module Semverve
       release_checks:,
       root:,
       rubygems_host:,
+      task_namespace:,
       version_file:,
       version_checks:,
       version_code_reference_files:,
@@ -551,6 +578,7 @@ module Semverve
       @release_checks = release_checks
       @root = root
       @rubygems_host = rubygems_host
+      @task_namespace = task_namespace
       @version_file = version_file
       @version_checks = version_checks
       @version_code_reference_files = version_code_reference_files

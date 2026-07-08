@@ -7,6 +7,8 @@ require_relative "adapters"
 require_relative "generator"
 require_relative "published_version"
 require_relative "semantic_version"
+require_relative "task_reporter"
+require_relative "version_audit"
 require_relative "version_file"
 require_relative "version_checks"
 
@@ -63,6 +65,8 @@ module Semverve
     def initialize
       yield Semverve.configuration if block_given?
 
+      @task_namespace = Semverve.configuration.normalized_task_namespace
+
       unless self.class.send(:installed_for_current_application?)
         define
         self.class.send(:mark_current_application_installed)
@@ -70,11 +74,11 @@ module Semverve
     end
 
     ##
-    # Defines the +semverve:*+ Rake tasks.
+    # Defines the configured Rake tasks.
     #
     # @return [void]
     def define
-      namespace :semverve do
+      namespace task_namespace do
         desc "Print the current version from the version.rb file"
         task :current do
           puts VersionFile.new(Semverve.configuration.resolved).current
@@ -156,6 +160,22 @@ module Semverve
     private
 
     ##
+    # Rake namespace used for installed task names.
+    #
+    # @return [String]
+    attr_reader :task_namespace
+
+    ##
+    # Full Rake task name for user-facing messages.
+    #
+    # @param [Array<#to_s>] parts
+    #
+    # @return [String]
+    def task_name(*parts)
+      ([task_namespace] + parts).join(":")
+    end
+
+    ##
     # Increments a version level and reports the update.
     #
     # @param [Symbol] level
@@ -165,7 +185,7 @@ module Semverve
       configuration = Semverve.configuration.resolved
       update = VersionFile.new(configuration).increment(level)
 
-      report(update, configuration)
+      reporter.report_update(update, configuration)
     end
 
     ##
@@ -179,7 +199,7 @@ module Semverve
       requested_version = SemanticVersion.parse(requested_version_argument(args))
       update = VersionFile.new(configuration).set(requested_version)
 
-      report(update, configuration)
+      reporter.report_update(update, configuration)
     end
 
     ##
@@ -187,15 +207,8 @@ module Semverve
     #
     # @return [void]
     def check(args = nil)
-      configuration, current_version = check_context
-      target_version = target_version_argument(args, "semverve:check")
-      report_findings(
-        check_groups(configuration, current_version, target_version),
-        current_version,
-        target_version: target_version,
-        fix_task_name: "semverve:fix",
-        clean_message: "Version checks passed."
-      )
+      target_version = target_version_argument(args, task_name("check"))
+      reporter.report_check(audit(include_ignored: report_ignored?).check(target_version: target_version), fix_task_name: task_name("fix"))
     end
 
     ##
@@ -203,11 +216,9 @@ module Semverve
     #
     # @return [void]
     def fix(args = nil)
-      configuration, current_version = check_context
-      target_version = target_version_argument(args, "semverve:fix")
-      return report_current_target_noop(target_version) if target_version == current_version
+      target_version = target_version_argument(args, task_name("fix"))
 
-      report_fix_results(fix_results(configuration, current_version, target_version))
+      reporter.report_fix(audit.fix(target_version: target_version))
     end
 
     ##
@@ -218,23 +229,10 @@ module Semverve
     #
     # @return [void]
     def check_version_check(version_check, args = nil)
-      configuration, current_version = check_context
-      target_version = check_target_version(version_check, args, "semverve:check:#{version_check.task_name}")
-      report_findings(
-        [[
-          version_check,
-          version_check.finding_label,
-          version_check.findings(
-            configuration,
-            current_version,
-            include_ignored: report_ignored?,
-            target_version: target_version
-          )
-        ]],
-        current_version,
-        target_version: target_version,
-        fix_task_name: "semverve:fix:#{version_check.task_name}",
-        clean_message: version_check.clean_message
+      target_version = target_version_argument(args, task_name("check", version_check.task_name))
+      reporter.report_check(
+        audit(include_ignored: report_ignored?).check_one(version_check.name, target_version: target_version),
+        fix_task_name: task_name("fix", version_check.task_name)
       )
     end
 
@@ -246,17 +244,8 @@ module Semverve
     #
     # @return [void]
     def fix_version_check(version_check, args = nil)
-      configuration, current_version = check_context
-      target_version = check_target_version(version_check, args, "semverve:fix:#{version_check.task_name}")
-      return report_current_target_noop(target_version) if target_version == current_version
-
-      report_fix_results(
-        [[
-          version_check.fix_label,
-          version_check.fix(configuration, current_version, target_version: target_version)
-        ]],
-        clean_message: version_check.clean_message
-      )
+      target_version = target_version_argument(args, task_name("fix", version_check.task_name))
+      reporter.report_fix(audit.fix_one(version_check.name, target_version: target_version))
     end
 
     ##
@@ -268,21 +257,12 @@ module Semverve
     end
 
     ##
-    # Fetches a registered version check.
-    #
-    # @param [Symbol, String] name
-    #
-    # @return [#name]
-    def version_check(name)
-      VersionChecks.fetch(name, extra_checks: Adapters.checks)
-    end
-
-    ##
     # Checks whether the current gem version is already published.
     #
     # @return [void]
     def check_rubygems
-      configuration, current_version = check_context
+      configuration = Semverve.configuration.resolved
+      current_version = VersionAudit.new(configuration: configuration).current_version
       PublishedVersion.new(configuration, current_version).check
 
       puts "#{configuration.gem_name} #{current_version} is not published on #{configuration.rubygems_host}."
@@ -293,47 +273,14 @@ module Semverve
     #
     # @return [void]
     def check_release
-      configuration, current_version = check_context
+      configuration = Semverve.configuration.resolved
+      current_version = VersionAudit.new(configuration: configuration).current_version
 
       if configuration.release_checks.include?(:rubygems)
         PublishedVersion.new(configuration, current_version).check
       end
 
       puts "Release checks passed."
-    end
-
-    ##
-    # Resolved configuration and current version for check tasks.
-    #
-    # @return [Array(Semverve::ResolvedConfiguration, Semverve::SemanticVersion)]
-    def check_context
-      configuration = Semverve.configuration.resolved
-      [configuration, VersionFile.new(configuration).current]
-    end
-
-    ##
-    # Finding groups enabled for the umbrella check task.
-    #
-    # @param [Semverve::ResolvedConfiguration] configuration
-    # @param [Semverve::SemanticVersion] current_version
-    #
-    # @param [Semverve::SemanticVersion, nil] target_version
-    #
-    # @return [Array<Array(#name, String, Array)>]
-    def check_groups(configuration, current_version, target_version = nil)
-      configuration.version_checks.map do |check_name|
-        version_check = version_check(check_name)
-        [
-          version_check,
-          version_check.finding_label,
-          version_check.findings(
-            configuration,
-            current_version,
-            include_ignored: report_ignored?,
-            target_version: target_version_for(version_check, target_version)
-          )
-        ]
-      end
     end
 
     ##
@@ -392,7 +339,7 @@ module Semverve
     # @return [String]
     def requested_version_argument(args)
       version = args[:version]
-      raise Error, "Run rake 'semverve:set[MAJOR.MINOR.PATCH]'." if version.nil? || version.empty?
+      raise Error, "Run rake '#{task_name("set")}[MAJOR.MINOR.PATCH]'." if version.nil? || version.empty?
 
       version
     end
@@ -414,151 +361,19 @@ module Semverve
     end
 
     ##
-    # Optional exact version argument for checks that support targeting.
+    # Version audit for the current invocation.
     #
-    # @param [#targetable?] version_check
-    # @param [Rake::TaskArguments, nil] args
-    # @param [String] task_name
-    #
-    # @return [Semverve::SemanticVersion, nil]
-    def check_target_version(version_check, args, task_name)
-      return nil unless version_check.targetable?
-
-      target_version_argument(args, task_name)
+    # @return [Semverve::VersionAudit]
+    def audit(include_ignored: false)
+      VersionAudit.new(configuration: Semverve.configuration.resolved, include_ignored: include_ignored)
     end
 
     ##
-    # Applies an umbrella target only to checks that support targeting.
+    # Reporter for Rake output.
     #
-    # @param [#targetable?] version_check
-    # @param [Semverve::SemanticVersion, nil] target_version
-    #
-    # @return [Semverve::SemanticVersion, nil]
-    def target_version_for(version_check, target_version)
-      version_check.targetable? ? target_version : nil
-    end
-
-    ##
-    # Fix results enabled for the umbrella fix task.
-    #
-    # @param [Semverve::ResolvedConfiguration] configuration
-    # @param [Semverve::SemanticVersion] current_version
-    # @param [Semverve::SemanticVersion, nil] target_version
-    #
-    # @return [Array<Array(String, #replacement_count, #changed_files)>]
-    def fix_results(configuration, current_version, target_version = nil)
-      configuration.version_checks.map do |check_name|
-        version_check = version_check(check_name)
-        [
-          version_check.fix_label,
-          version_check.fix(
-            configuration,
-            current_version,
-            target_version: target_version_for(version_check, target_version)
-          )
-        ]
-      end
-    end
-
-    ##
-    # Prints findings and raises when mismatches exist.
-    #
-    # @param [Array<Array(String, Array)>] groups
-    # @param [Semverve::SemanticVersion] current_version
-    # @param [Semverve::SemanticVersion, nil] target_version
-    # @param [String, nil] fix_task_name
-    # @param [String] clean_message
-    #
-    # @return [void]
-    def report_findings(groups, current_version, clean_message:, target_version: nil, fix_task_name: nil)
-      findings = groups.flat_map do |(version_check, label, group_findings)|
-        group_findings.map { |finding| [version_check, label || finding.label, finding] }
-      end
-
-      if findings.empty?
-        puts clean_message
-        return
-      end
-
-      findings.each do |(_version_check, label, finding)|
-        puts "#{finding.path}:#{finding.line}:#{finding.column}: #{label} #{finding.version} -> #{current_version}"
-      end
-      if target_version == current_version && fix_task_name && exact_target_fix_noop_findings?(findings)
-        puts "Target version #{target_version} is already current; #{fix_task_name}[#{target_version}] will not change these references."
-      end
-
-      issue = findings.one? ? "issue" : "issues"
-      raise Error, "Found #{findings.count} version check #{issue}."
-    end
-
-    ##
-    # Prints a no-op message for exact fix requests targeting the current version.
-    #
-    # @param [Semverve::SemanticVersion, nil] target_version
-    #
-    # @return [void]
-    def report_current_target_noop(target_version)
-      puts "Target version #{target_version} is already current; nothing to fix."
-    end
-
-    ##
-    # Whether findings include surfaces controlled by exact-target fixes.
-    #
-    # @param [Array<Array(#exact_target_fix_noop_notice?, String, Object)>] findings
-    #
-    # @return [Boolean]
-    def exact_target_fix_noop_findings?(findings)
-      findings.any? { |(version_check, _label, _finding)| version_check.exact_target_fix_noop_notice? }
-    end
-
-    ##
-    # Prints fix results.
-    #
-    # @param [Array<Array(String, #replacement_count, #changed_files)>] results
-    # @param [String] clean_message
-    #
-    # @return [void]
-    def report_fix_results(results, clean_message: "Version checks passed.")
-      replacement_count = results.sum { |(_label, result)| result.replacement_count }
-      bundle_lock_ran = results.any? { |(_label, result)| result.bundle_lock_ran }
-
-      if replacement_count.zero? && !bundle_lock_ran
-        puts clean_message
-        return
-      end
-
-      results.each do |(label, result)|
-        result.changed_files.each { |path| puts "Updated #{path}" }
-        next if result.replacement_count.zero?
-
-        noun = (result.replacement_count == 1) ? label : "#{label}s"
-        puts "Replaced #{result.replacement_count} #{noun}."
-      end
-
-      puts "Ran bundle lock." if bundle_lock_ran
-    end
-
-    ##
-    # Reports an update and runs configured follow-up commands.
-    #
-    # @param [Semverve::VersionFile::UpdateResult] update
-    # @param [Semverve::ResolvedConfiguration] configuration
-    #
-    # @return [void]
-    def report(update, configuration)
-      unless update.changed?
-        puts "Version is already #{update.version}"
-        return
-      end
-
-      if update.version < update.previous_version
-        warn "Warning: updating to version #{update.version}, which is lower than the current version #{update.previous_version}."
-      end
-
-      puts "Updating to version #{update.version} (was #{update.previous_version})"
-      configuration.command_runner.call("bundle lock") if configuration.bundle_lock
+    # @return [Semverve::TaskReporter]
+    def reporter
+      TaskReporter.new
     end
   end
 end
-
-Semverve::Task.install

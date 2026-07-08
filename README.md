@@ -47,6 +47,8 @@ Then add this to your Rakefile:
 
 ```ruby
 require "semverve/task"
+
+Semverve::Task.new
 ```
 
 This defines:
@@ -80,16 +82,17 @@ For a conventional gem, this may be all you need:
 
 ```ruby
 require "semverve/task"
+
+Semverve::Task.new
 ```
 
-That automatically installs the `semverve:*` Rake tasks. If you want to make
-the setup explicit, or if you want to change any defaults, configure Semverve
-from your Rakefile:
+That installs the `semverve:*` Rake tasks. If you want to change any defaults,
+configure Semverve from the task block in your Rakefile:
 
 ```ruby
 require "semverve/task"
 
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.format = :module
   config.bundle_lock = true
   config.version_file = "lib/my_gem/version.rb"
@@ -106,7 +109,7 @@ end
 The core defaults are equivalent to:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.adapter = nil
   config.format = :module
   config.bundle_lock = false
@@ -114,6 +117,7 @@ Semverve.configure do |config|
   config.version_checks = [:doc_references, :code_references, :package_metadata]
   config.release_checks = []
   config.rubygems_host = "https://rubygems.org"
+  config.task_namespace = :semverve
   config.version_match_mode = :older
   config.version_code_reference_files = Rake::FileList[]
   config.version_code_reference_pattern =
@@ -133,6 +137,20 @@ version and matching `Gemfile.lock` entry through its default package metadata
 check.
 Release checks are empty by default because they may make network requests and
 are intended for release pipelines rather than every local or pull-request run.
+
+Set `config.task_namespace` in the task block to use a shorter or
+project-specific namespace:
+
+```ruby
+require "semverve/task"
+
+Semverve::Task.new do |config|
+  config.task_namespace = :version
+end
+```
+
+That installs tasks such as `version:current`, `version:increment:patch`, and
+`version:check` instead of `semverve:*`.
 
 Semverve tasks use Rake task arguments for values:
 
@@ -160,18 +178,10 @@ config.version_file # lib/<gem_name>/version.rb
 Override them when your project does something unusual:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.gem_name = "my-gem"
   config.module_name = "MyGem"
   config.version_file = "lib/my_gem/version.rb"
-end
-```
-
-Explicit task setup is also supported:
-
-```ruby
-Semverve::Task.new do |config|
-  config.bundle_lock = true
 end
 ```
 
@@ -190,7 +200,7 @@ tasks for `bin/rails`/`rails` automatically. To use Rails-style defaults, set
 the Rails adapter:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.adapter = :rails
 end
 ```
@@ -212,7 +222,7 @@ bin/rails semverve:generate
 If your app keeps the version somewhere else, override the path:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.adapter = :rails
   config.version_file = "config/releases/version.rb"
 end
@@ -245,7 +255,7 @@ Kamal, and Helm, are intentionally left for future adapter support.
 Sinatra applications can use the Sinatra adapter for app-style defaults:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.adapter = :sinatra
 end
 ```
@@ -320,6 +330,44 @@ rake 'semverve:generate[1.0.0,force]'
 rake 'semverve:generate[simple,force]'
 rake 'semverve:generate[1.0.0,simple,force]'
 ```
+
+### Bootstrapping a new gem
+If your gemspec dynamically requires the generated version file, a brand-new
+project can fail before `semverve:generate` has a chance to run:
+
+```ruby
+require_relative "lib/my_gem/version"
+```
+
+Rake loads the Rakefile before it can invoke any task. If loading the Rakefile
+also loads `bundler/gem_tasks`, Bundler evaluates the gemspec, and an
+unconditional `require_relative` can crash because `lib/my_gem/version.rb` does
+not exist yet.
+
+Prefer guarding Bundler's gem tasks while running `semverve:generate`:
+
+```ruby
+require "semverve/task"
+
+unless ARGV.any? { |arg| arg.start_with?("semverve:generate") }
+  require "bundler/gem_tasks"
+end
+
+Semverve::Task.new
+```
+
+Then generate the version file:
+
+```sh
+rake semverve:generate
+```
+
+After generation, you can keep the guard or switch back to your normal dynamic
+gemspec loading style.
+
+Semverve's metadata inference does not evaluate the gemspec for generation; it
+reads the literal `spec.name`, so either bootstrap pattern still allows
+`semverve:generate` to infer `lib/my_gem/version.rb`.
 
 ## Incrementing
 ```sh
@@ -407,7 +455,7 @@ Choose which surfaces the umbrella `check` and `fix` tasks run with
 `config.version_checks`:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.version_checks = [:doc_references, :package_metadata]
 end
 ```
@@ -497,7 +545,7 @@ README files, docs, guides, changelogs, or comments. By default, Semverve scans
 README files throughout the repo:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.version_doc_reference_files = Rake::FileList["README*", "**/README*"].exclude(
     ".git/**/*",
     "coverage/**/*",
@@ -510,7 +558,7 @@ end
 Add docs or Ruby comments without replacing the README defaults:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.version_doc_reference_files.append("doc/**/*.md", "lib/**/*.rb")
 end
 ```
@@ -518,7 +566,7 @@ end
 Replace the defaults entirely:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.version_doc_reference_files = Rake::FileList["guides/**/*.md"]
 end
 ```
@@ -530,7 +578,7 @@ The default version match mode is `:older`, which flags only semantic versions
 lower than the current version in doc references and code literals:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.version_match_mode = :older
 end
 ```
@@ -539,7 +587,7 @@ Use `:non_current` when every doc reference and code literal should match the
 current version:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.version_match_mode = :non_current
 end
 ```
@@ -564,7 +612,7 @@ Code scanning is opt-in to avoid false positives. This is for arbitrary project
 code, not package metadata. The default is:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.version_code_reference_files = Rake::FileList[]
 end
 ```
@@ -572,7 +620,7 @@ end
 Append files when you want Semverve to check safe code literals:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.version_code_reference_files.append("lib/**/*.rb")
 end
 ```
@@ -580,7 +628,7 @@ end
 Or replace the list entirely:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.version_code_reference_files = Rake::FileList["lib/**/*.rb", "*.gemspec"]
 end
 ```
@@ -611,7 +659,7 @@ If your project has a different safe version-literal shape, provide your own
 pattern:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.version_code_reference_files.append("lib/**/*.rb")
   config.version_code_reference_pattern = /release ["'](?<version>\d+\.\d+\.\d+)["']/
 end
@@ -696,7 +744,7 @@ than every pull request.
 Enable the RubyGems published-version check:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.release_checks = [:rubygems]
 end
 ```
@@ -737,7 +785,7 @@ my_gem 1.2.3 is not published on https://rubygems.org.
 Use `config.rubygems_host` for a private RubyGems-compatible server:
 
 ```ruby
-Semverve.configure do |config|
+Semverve::Task.new do |config|
   config.release_checks = [:rubygems]
   config.rubygems_host = "https://gems.example.com"
 end
