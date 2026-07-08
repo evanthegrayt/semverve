@@ -128,6 +128,12 @@ module Semverve
     attr_accessor :version_doc_reference_files
 
     ##
+    # Project-relative file/line/version references to ignore.
+    #
+    # @return [Hash]
+    attr_accessor :version_reference_ignores
+
+    ##
     # Version-maintenance surfaces run by the umbrella check and fix tasks.
     #
     # @return [Array<Symbol, String>]
@@ -159,6 +165,7 @@ module Semverve
         "tmp/**/*",
         "vendor/**/*"
       )
+      @version_reference_ignores = {}
       @version_match_mode = :older
       self.release_checks = []
       @version_checks = DEFAULT_VERSION_CHECKS
@@ -186,6 +193,7 @@ module Semverve
         version_code_reference_files: version_code_reference_files,
         version_code_reference_pattern: version_code_reference_pattern,
         version_doc_reference_files: version_doc_reference_files,
+        version_reference_ignores: version_reference_ignores,
         version_match_mode: normalized_version_match_mode
       )
     end
@@ -528,6 +536,12 @@ module Semverve
     attr_reader :version_doc_reference_files
 
     ##
+    # Resolved project-relative file/line/version references to ignore.
+    #
+    # @return [Hash]
+    attr_reader :version_reference_ignores
+
+    ##
     # Resolved version matching mode for reference and code-literal checks.
     #
     # @return [Symbol]
@@ -550,6 +564,7 @@ module Semverve
     # @param [Rake::FileList] version_code_reference_files
     # @param [Regexp] version_code_reference_pattern
     # @param [Rake::FileList] version_doc_reference_files
+    # @param [Hash] version_reference_ignores
     # @param [Symbol] version_match_mode
     #
     # @return [Semverve::ResolvedConfiguration]
@@ -568,6 +583,7 @@ module Semverve
       version_code_reference_files:,
       version_code_reference_pattern:,
       version_doc_reference_files:,
+      version_reference_ignores:,
       version_match_mode:
     )
       @bundle_lock = bundle_lock
@@ -584,6 +600,7 @@ module Semverve
       @version_code_reference_files = version_code_reference_files
       @version_code_reference_pattern = version_code_reference_pattern
       @version_doc_reference_files = version_doc_reference_files
+      @version_reference_ignores = version_reference_ignores
       @version_match_mode = version_match_mode
     end
 

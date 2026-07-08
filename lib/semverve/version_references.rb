@@ -6,6 +6,7 @@ require_relative "file_list_resolver"
 require_relative "finding"
 require_relative "fix_result"
 require_relative "semantic_version"
+require_relative "version_reference_ignores"
 require_relative "version_match_policy"
 
 module Semverve
@@ -150,7 +151,7 @@ module Semverve
     # @return [Array(String, Integer)]
     def fixed_content(path, content)
       replacements = scannable_segments(path, content).flat_map do |segment|
-        replacements_for_segment(segment, content)
+        replacements_for_segment(path, segment, content)
       end
 
       replacements.sort_by { |replacement| -replacement[:index] }.each do |replacement|
@@ -256,7 +257,7 @@ module Semverve
     #
     # @return [Array<Semverve::Finding>]
     def findings_for_segment(path, segment, content)
-      references_for_segment(segment, content).map do |reference|
+      references_for_segment(path, segment, content).map do |reference|
         Semverve::Finding.new(
           path: relative_path(path),
           line: segment[:line],
@@ -269,12 +270,13 @@ module Semverve
     ##
     # Replacements to make in a segment.
     #
+    # @param [String] path
     # @param [Hash] segment
     # @param [String] content
     #
     # @return [Array<Hash>]
-    def replacements_for_segment(segment, content)
-      references_for_segment(segment, content).map do |reference|
+    def replacements_for_segment(path, segment, content)
+      references_for_segment(path, segment, content).map do |reference|
         {
           index: reference[:index],
           length: reference[:length]
@@ -285,11 +287,12 @@ module Semverve
     ##
     # Version references in a segment.
     #
+    # @param [String] path
     # @param [Hash] segment
     # @param [String] content
     #
     # @return [Array<Hash>]
-    def references_for_segment(segment, content)
+    def references_for_segment(path, segment, content)
       return [] if !include_ignored && ignored_line?(segment[:line], content)
 
       segment[:text].to_enum(:scan, VERSION_PATTERN).filter_map do
@@ -297,6 +300,7 @@ module Semverve
         version = SemanticVersion.parse(match[0])
 
         next unless report?(version)
+        next if !include_ignored && configured_ignore?(path, segment[:line], version)
 
         {
           column: segment[:column] + match.begin(0),
@@ -338,6 +342,18 @@ module Semverve
     end
 
     ##
+    # Whether a finding is configured as ignored.
+    #
+    # @param [String] path
+    # @param [Integer] line
+    # @param [Semverve::SemanticVersion] version
+    #
+    # @return [Boolean]
+    def configured_ignore?(path, line, version)
+      reference_ignores.ignored?(path: relative_path(path), line: line, version: version)
+    end
+
+    ##
     # Version matching behavior for references.
     #
     # @return [Semverve::VersionMatchPolicy]
@@ -347,6 +363,14 @@ module Semverve
         match_mode: configuration.version_match_mode,
         target_version: target_version
       )
+    end
+
+    ##
+    # Configured file/line/version ignores.
+    #
+    # @return [Semverve::VersionReferenceIgnores]
+    def reference_ignores
+      @reference_ignores ||= VersionReferenceIgnores.new(configuration.version_reference_ignores)
     end
 
     ##

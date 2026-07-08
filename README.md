@@ -369,6 +369,19 @@ Semverve's metadata inference does not evaluate the gemspec for generation; it
 reads the literal `spec.name`, so either bootstrap pattern still allows
 `semverve:generate` to infer `lib/my_gem/version.rb`.
 
+Alternatively, make the gemspec tolerate the missing file during bootstrap:
+
+```ruby
+version_path = File.expand_path("lib/my_gem/version", __dir__)
+require version_path if File.file?("#{version_path}.rb")
+
+Gem::Specification.new do |spec|
+  spec.name = "my_gem"
+  spec.version = defined?(MyGem::VERSION) ? MyGem::VERSION : "0.0.0"
+  semverve
+end
+```
+
 ## Incrementing
 ```sh
 rake semverve:increment:patch
@@ -598,6 +611,26 @@ same line or the preceding nonblank line.
 ```markdown
 This migration note intentionally mentions 1.0.0. <!-- semverve:ignore-version-reference -->
 ```
+
+Prefer ignore markers when possible because they move with the ignored text.
+Configured ignores are for edge cases where a marker would render as unwanted
+content, such as inside a Markdown code block. They depend on line numbers, so
+they can drift when the file changes:
+
+```ruby
+Semverve::Task.new do |config|
+  config.version_reference_ignores = {
+    "README.md" => {
+      42 => ["1.0.0"],
+      45 => "2.0.0"
+    }
+  }
+end
+```
+
+Configured ignores apply to documentation references and code literals. They are
+exact to the version string, so other stale versions on the same line are still
+reported. Fix tasks leave configured ignores unchanged.
 
 Audit ignored references by setting `SEMVERVE_REPORT_IGNORED=true` when running
 check tasks:
