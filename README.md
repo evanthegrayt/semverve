@@ -22,19 +22,19 @@ file, incrementing patch/minor/major versions, setting an exact version, and
 checking the places where version numbers tend to drift, like `.gemspec` files and
 documentation.
 
-In a nutshell, `rake semverve:increment:(patch|minor|major)` updates
-your configured `version.rb` file, and `rake semverve:check` checks whether the
-surrounding project still agrees with that version. It can catch stale README
-references, safe code literals, `.gemspec` drift, and a stale `Gemfile.lock`
-entry. If you want Semverve to do the mechanical cleanup, the matching `*:fix`
-tasks can update safe references and run `bundle lock` for generated lockfile
-drift. Specific findings can be skipped with magic comments, similar to RuboCop
-and RDoc.
+In a nutshell, `rake semverve:increment:patch` updates the "patch" level in your
+configured `version.rb` file, `:minor` updates the "minor" level, etc.. Calling
+`rake semverve:check` checks whether the surrounding project still agrees with
+that version. It can catch stale README references, safe code literals,
+`.gemspec` drift, and a stale `Gemfile.lock` entry. If you want Semverve to do
+the mechanical cleanup, the matching `*:fix` tasks can update safe references
+and run `bundle lock` for generated lockfile drift. Specific findings can be
+skipped with magic comments, similar to RuboCop and RDoc.
 
 You can view the documentation
 [here](https://evanthegrayt.github.io/semverve/).
 
-If you are upgrading across breaking changes, see [UPGRADING.md](UPGRADING.md).
+For release history and upgrading notes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## Installation
 Add the gem to your Gemfile:
@@ -493,8 +493,8 @@ end
 
 ### Version references
 Version references are prose-like references to versions. These are usually in
-README files, docs, guides, or comments. By default, Semverve scans README files
-throughout the repo:
+README files, docs, guides, changelogs, or comments. By default, Semverve scans
+README files throughout the repo:
 
 ```ruby
 Semverve.configure do |config|
