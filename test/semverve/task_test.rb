@@ -260,16 +260,21 @@ module Semverve
         end
       end.new
       finding = Finding.new(path: "README.md", line: 1, column: 1, version: current_version)
+      result = VersionAudit::CheckResult.new(
+        current_version: current_version,
+        target_version: current_version,
+        groups: [
+          VersionAudit::FindingGroup.new(
+            check: check,
+            label: "custom label",
+            findings: [finding]
+          )
+        ],
+        clean_message: "clean"
+      )
 
       stdout, _stderr, error = capture_error(Error) do
-        Task.new.send(
-          :report_findings,
-          [[check, "custom label", [finding]]],
-          current_version,
-          target_version: current_version,
-          fix_task_name: "semverve:fix",
-          clean_message: "clean"
-        )
+        TaskReporter.new.report_check(result, fix_task_name: "semverve:fix")
       end
 
       assert_match(/README\.md:1:1: custom label 2\.0\.1 -> 2\.0\.1/, stdout)
