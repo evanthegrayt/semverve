@@ -112,7 +112,7 @@ module Semverve
     # @return [String]
     def read
       unless File.file?(path)
-        raise Error, "Could not find version file #{path}. Run rake semverve:generate or set config.version_file."
+        raise Error, "Could not find version file #{path}. Run rake #{configuration.task_namespace}:generate or set config.version_file."
       end
 
       File.read(path)

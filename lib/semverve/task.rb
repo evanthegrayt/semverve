@@ -63,6 +63,8 @@ module Semverve
     def initialize
       yield Semverve.configuration if block_given?
 
+      @task_namespace = Semverve.configuration.normalized_task_namespace
+
       unless self.class.send(:installed_for_current_application?)
         define
         self.class.send(:mark_current_application_installed)
@@ -70,11 +72,11 @@ module Semverve
     end
 
     ##
-    # Defines the +semverve:*+ Rake tasks.
+    # Defines the configured Rake tasks.
     #
     # @return [void]
     def define
-      namespace :semverve do
+      namespace task_namespace do
         desc "Print the current version from the version.rb file"
         task :current do
           puts VersionFile.new(Semverve.configuration.resolved).current
@@ -156,6 +158,22 @@ module Semverve
     private
 
     ##
+    # Rake namespace used for installed task names.
+    #
+    # @return [String]
+    attr_reader :task_namespace
+
+    ##
+    # Full Rake task name for user-facing messages.
+    #
+    # @param [Array<#to_s>] parts
+    #
+    # @return [String]
+    def task_name(*parts)
+      ([task_namespace] + parts).join(":")
+    end
+
+    ##
     # Increments a version level and reports the update.
     #
     # @param [Symbol] level
@@ -188,12 +206,12 @@ module Semverve
     # @return [void]
     def check(args = nil)
       configuration, current_version = check_context
-      target_version = target_version_argument(args, "semverve:check")
+      target_version = target_version_argument(args, task_name("check"))
       report_findings(
         check_groups(configuration, current_version, target_version),
         current_version,
         target_version: target_version,
-        fix_task_name: "semverve:fix",
+        fix_task_name: task_name("fix"),
         clean_message: "Version checks passed."
       )
     end
@@ -204,7 +222,7 @@ module Semverve
     # @return [void]
     def fix(args = nil)
       configuration, current_version = check_context
-      target_version = target_version_argument(args, "semverve:fix")
+      target_version = target_version_argument(args, task_name("fix"))
       return report_current_target_noop(target_version) if target_version == current_version
 
       report_fix_results(fix_results(configuration, current_version, target_version))
@@ -219,7 +237,7 @@ module Semverve
     # @return [void]
     def check_version_check(version_check, args = nil)
       configuration, current_version = check_context
-      target_version = check_target_version(version_check, args, "semverve:check:#{version_check.task_name}")
+      target_version = check_target_version(version_check, args, task_name("check", version_check.task_name))
       report_findings(
         [[
           version_check,
@@ -233,7 +251,7 @@ module Semverve
         ]],
         current_version,
         target_version: target_version,
-        fix_task_name: "semverve:fix:#{version_check.task_name}",
+        fix_task_name: task_name("fix", version_check.task_name),
         clean_message: version_check.clean_message
       )
     end
@@ -247,7 +265,7 @@ module Semverve
     # @return [void]
     def fix_version_check(version_check, args = nil)
       configuration, current_version = check_context
-      target_version = check_target_version(version_check, args, "semverve:fix:#{version_check.task_name}")
+      target_version = check_target_version(version_check, args, task_name("fix", version_check.task_name))
       return report_current_target_noop(target_version) if target_version == current_version
 
       report_fix_results(
@@ -392,7 +410,7 @@ module Semverve
     # @return [String]
     def requested_version_argument(args)
       version = args[:version]
-      raise Error, "Run rake 'semverve:set[MAJOR.MINOR.PATCH]'." if version.nil? || version.empty?
+      raise Error, "Run rake '#{task_name("set")}[MAJOR.MINOR.PATCH]'." if version.nil? || version.empty?
 
       version
     end
@@ -560,5 +578,3 @@ module Semverve
     end
   end
 end
-
-Semverve::Task.install

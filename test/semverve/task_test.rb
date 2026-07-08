@@ -54,6 +54,57 @@ module Semverve
       end
     end
 
+    def test_task_file_does_not_install_tasks_until_task_is_initialized
+      assert_raise(RuntimeError) { Rake::Task["semverve:current"] }
+    end
+
+    def test_defines_tasks_under_configured_namespace
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new { |config| config.task_namespace = :version }
+
+        assert_not_nil Rake::Task["version:current"]
+        assert_not_nil Rake::Task["version:set"]
+        assert_not_nil Rake::Task["version:increment:patch"]
+        assert_not_nil Rake::Task["version:check:references"]
+        assert_not_nil Rake::Task["version:fix:references"]
+        assert_not_nil Rake::Task["version:check:release"]
+        assert_raise(RuntimeError) { Rake::Task["semverve:current"] }
+        assert_equal "2.0.1\n", capture_stdout { Rake::Task["version:current"].invoke }
+      end
+    end
+
+    def test_configured_namespace_is_used_in_task_help_messages
+      in_project do
+        write_gemspec("my_gem")
+        write_module_version("MyGem", "2.0.1")
+
+        Task.new { |config| config.task_namespace = "version" }
+
+        set_error = assert_raise(Error) { Rake::Task["version:set"].invoke }
+        assert_equal "Run rake 'version:set[MAJOR.MINOR.PATCH]'.", set_error.message
+
+        check_error = assert_raise(Error) { Rake::Task["version:check"].invoke("nope") }
+        assert_equal "Run rake 'version:check[MAJOR.MINOR.PATCH]'.", check_error.message
+
+        generate_error = assert_raise(Error) { Rake::Task["version:generate"].invoke }
+        assert_match(/version:generate\[force\]/, generate_error.message)
+      end
+    end
+
+    def test_configured_namespace_is_used_in_missing_version_file_help
+      in_project do
+        write_gemspec("my_gem")
+
+        Task.new { |config| config.task_namespace = :version }
+
+        error = assert_raise(Error) { Rake::Task["version:current"].invoke }
+        assert_match(/Run rake version:generate/, error.message)
+      end
+    end
+
     def test_version_check_registry_resolves_core_and_adapter_checks
       core_check = VersionChecks.fetch(:doc_references, extra_checks: Adapters.checks)
       rails_check = VersionChecks.fetch(:rails_config_metadata, extra_checks: Adapters.checks)
@@ -488,6 +539,28 @@ module Semverve
         end
 
         assert_equal "1.2.3\n", capture_stdout { Rake::Task["semverve:current"].invoke }
+      end
+    end
+
+    def test_configure_before_task_initialization_sets_task_configuration
+      in_project do
+        write_gemspec("ignored_name")
+        custom_path = File.join("custom", "version.rb")
+        write_simple_version("CustomGem", "1.2.3", path: custom_path)
+
+        Semverve.configure do |config|
+          config.task_namespace = :version
+          config.gem_name = "custom_gem"
+          config.module_name = "CustomGem"
+          config.version_file = custom_path
+          config.format = :simple
+        end
+
+        Task.new
+
+        assert_not_nil Rake::Task["version:current"]
+        assert_raise(RuntimeError) { Rake::Task["semverve:current"] }
+        assert_equal "1.2.3\n", capture_stdout { Rake::Task["version:current"].invoke }
       end
     end
 

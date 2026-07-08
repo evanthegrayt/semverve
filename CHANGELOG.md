@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- Changed Rake task installation to require explicit `Semverve::Task.new`
+  setup after requiring `semverve/task`.
+- Added configurable Rake task namespaces with `config.task_namespace`.
+
 ## Version 0.4.1
 - Removed the documentation publisher from the release workflow.
 

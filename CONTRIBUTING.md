@@ -28,7 +28,7 @@ The default task runs:
 
 ```sh
 bundle exec rake test
-bundle exec rake semverve:check
+bundle exec rake version:check
 ```
 
 Tests live under `test/semverve` and use `test-unit`. The suite exercises the
@@ -115,26 +115,28 @@ smoke-testing. The project Rakefile requires `lib/semverve/task` and installs
 `Semverve::Task` with this project-specific configuration:
 
 ```ruby
-Semverve::Task.new do |t|
-  t.bundle_lock = true
-  t.version_code_reference_files.append("lib/**/*.rb", "semverve.gemspec", "Rakefile")
+Semverve::Task.new do |config|
+  config.task_namespace = :version
+  config.bundle_lock = true
+  config.version_code_reference_files.append("lib/**/*.rb", "semverve.gemspec", "Rakefile")
 end
 ```
 
-That means the local `semverve:*` tasks are the same tasks the gem provides to
-users. The current version is stored in `lib/semverve/version.rb`, the gemspec
-uses `Semverve::VERSION`, and `Gemfile.lock` is checked for drift.
+That means the local `version:*` tasks use the same implementation the gem
+provides to users under the default `semverve:*` namespace. The current version
+is stored in `lib/semverve/version.rb`, the gemspec uses `Semverve::VERSION`,
+and `Gemfile.lock` is checked for drift.
 
 Useful commands:
 
 ```sh
-bundle exec rake semverve:current
-bundle exec rake semverve:increment:patch
-bundle exec rake semverve:increment:minor
-bundle exec rake semverve:increment:major
-bundle exec rake 'semverve:set[x.y.z]'
-bundle exec rake semverve:check
-bundle exec rake semverve:fix
+bundle exec rake version:current
+bundle exec rake version:increment:patch
+bundle exec rake version:increment:minor
+bundle exec rake version:increment:major
+bundle exec rake 'version:set[x.y.z]'
+bundle exec rake version:check
+bundle exec rake version:fix
 ```
 
 Because `bundle_lock` is enabled for this repository, successful version updates

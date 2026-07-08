@@ -18,9 +18,10 @@ RDoc::Task.new do |rdoc|
   rdoc.rdoc_files.include("README.md", "lib/**/*.rb")
 end
 
-Semverve::Task.new do |t|
-  t.bundle_lock = true
-  t.version_code_reference_files.append("lib/**/*.rb", "semverve.gemspec", "Rakefile")
+Semverve::Task.new do |config|
+  config.task_namespace = :version
+  config.bundle_lock = true
+  config.version_code_reference_files.append("lib/**/*.rb", "semverve.gemspec", "Rakefile")
 end
 
 standardrb = ->(*args) do
@@ -39,4 +40,4 @@ namespace :standard do
   end
 end
 
-task default: [:test, "semverve:check"]
+task default: [:test, "version:check"]
