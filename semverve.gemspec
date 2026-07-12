@@ -7,8 +7,8 @@ Gem::Specification.new do |spec|
   spec.email = "evanthegrayt@vivaldi.net"
   spec.license = "MIT"
 
-  spec.summary = %(Rake tasks for managing Ruby gem version files)
-  spec.description = %(Semverve adds Rake tasks that read, generate, and increment Ruby gem version files.)
+  spec.summary = %(Rake tasks for reducing versioning tedium)
+  spec.description = %(Rake tasks for incrementing gem versions, and finding and updating version references in documentation and code. )
   spec.homepage = "https://github.com/evanthegrayt/semverve"
   spec.required_ruby_version = ">= 3.2"
 
