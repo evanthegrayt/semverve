@@ -249,7 +249,7 @@ config.x.version = Storefront::VERSION
 Rails engines or apps that publish gems can opt into package metadata checks by
 setting `config.gem_name` and including `:package_metadata` in
 `config.version_checks`. Deployment and container metadata, such as Docker,
-Kamal, and Helm, are intentionally left for future adapter support.
+Kamal, and Helm, remain for future adapter support.
 
 ## Sinatra apps
 Sinatra applications can use the Sinatra adapter for app-style defaults:
@@ -509,8 +509,8 @@ current.
 
 ## Extension API
 Semverve exposes small public objects for framework adapters and version checks.
-These APIs are intentionally local registration APIs; Semverve does not yet
-autoload third-party adapter gems.
+These APIs are local registration APIs; Semverve does not yet autoload
+third-party adapter gems.
 
 Register a framework adapter with `Semverve::Adapters.register`. An adapter
 must expose `name`, `defaults(configuration)`, and `checks`. It can also expose
@@ -605,7 +605,7 @@ Semverve::Task.new do |config|
 end
 ```
 
-Ignore an intentional reference with `semverve:ignore-version-reference` on the
+Ignore an explicit reference with `semverve:ignore-version-reference` on the
 same line or the preceding nonblank line.
 
 ```markdown
